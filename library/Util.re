@@ -5,7 +5,7 @@ module type ListConfig = {type t;};
 let now = () => 0.;
 
 type id;
-type timestamp = float;
+type float;
 
 let makeId: string => id = Obj.magic;
 
@@ -13,18 +13,19 @@ module RList = (Config: ListConfig) => {
   open Config;
   type diff = t;
   type operation =
-    | Append(timestamp, t)
-    | Prepend(timestamp, t)
-    | AddAfter(timestamp, id, t)
-    | AddBefore(timestamp, id, t)
-    | Remove(timestamp, id)
-    | Replace(timestamp, id, t);
+    | Append(t)
+    | Prepend(t)
+    | AddAfter(id, t)
+    | AddBefore(id, t)
+    | Remove(id)
+    | Replace(id, t);
 };
 
 module type MapConfig = {
   type t;
   type update;
   let getId: t => id;
+  let print: t => string;
   let reducer: (t, update) => (t, update);
 };
 
@@ -35,36 +36,44 @@ module RMap = (Config: MapConfig) => {
       type t = id;
       let compare = Pervasives.compare;
     });
+  type collection = IMap.t(t);
   let internalId = "__internal__" |> makeId;
   let internalData = IMap.empty;
   let wrapper = ref(internalData);
   type operation =
-    | Add(timestamp, t)
-    | Remove(timestamp, id)
-    | Update(timestamp, id, update);
+    | Add(t)
+    | Remove(id)
+    | Update(id, update);
 
-  let add = item => Add(now(), item);
-
-  let update = (item, action) => Update(now(), item |> getId, action);
-
-  let remove = item => Remove(now(), item |> getId);
   let handleUpdate = data => {
     fun
-    | Remove(timestamp, id) => IMap.remove(id, data)
-    | Add(timestamp, t) => IMap.add(t |> getId, t, data)
-    | Update(timestamp, id, update) => {
+    | Remove(id) => IMap.remove(id, data)
+    | Add(t) => IMap.add(t |> getId, t, data)
+    | Update(id, update) => {
+        print_endline("herer___1: " ++ (id |> Obj.magic));
         let (newData, _) = reducer(IMap.find(id, data), update);
         IMap.add(id, newData, data);
       };
   };
-  let getMap_ = () => wrapper^;
+
+  let getCollection = () => wrapper^;
+
+  let printCollection = () => {
+    print_endline(
+      "Print collection:"
+      ++ (getCollection() |> IMap.cardinal |> string_of_int),
+    );
+    getCollection() |> IMap.iter((_, item) => print(item) |> print_endline);
+  };
+
   let setMap = updatedInternalData => {
     wrapper := updatedInternalData;
   };
+
   let toList = m =>
     m |> IMap.to_seq |> List.of_seq |> List.map(((id, item: t)) => item);
   let save = updates => {
-    List.fold_left(handleUpdate, getMap_(), updates) |> setMap;
+    List.fold_left(handleUpdate, getCollection(), updates) |> setMap;
   };
-  let get = id => IMap.find(id, getMap_());
+  let get = id => IMap.find(id, getCollection());
 };

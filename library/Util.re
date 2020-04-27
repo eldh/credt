@@ -114,15 +114,21 @@ module RMap = (Config: MapConfig) => {
     wrapper := updatedInternalData;
   };
 
-  let save = (~handleUndo=?, updates) =>
+  /**
+   * Apply a list of operations
+   */
+  let apply = (~handleUndo=?, updates) =>
     List.fold_left(handleOperation(~handleUndo?), getCollection(), updates)
     |> setMap;
+
+  /* Apply operations that should not be part of the undo/redo handling */
+  let applyRemoteOperations = apply(~handleUndo=ignore);
 
   let undo = () => {
     switch (undoHistory^) {
     | [] => ()
     | [a, ...rest] =>
-      [a] |> save(~handleUndo=addRedo);
+      [a] |> apply(~handleUndo=addRedo);
       undoHistory := rest;
     };
   };
@@ -131,7 +137,7 @@ module RMap = (Config: MapConfig) => {
     switch (redoHistory^) {
     | [] => ()
     | [a, ...rest] =>
-      [a] |> save;
+      [a] |> apply;
       redoHistory := rest;
     };
   };

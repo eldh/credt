@@ -86,12 +86,12 @@ module Graph = {
 
     // let handleUpdate = updates => {
     //   switch (updates) {
-    //   | User(operations) => User.save(operations)
-    //   | Group(operations) => Group.save(operations)
-    //   | Post(operations) => Post.save(operations)
+    //   | User(operations) => User.apply(operations)
+    //   | Group(operations) => Group.apply(operations)
+    //   | Post(operations) => Post.apply(operations)
     //   };
     // };
-    let save = updates => {
+    let apply = updates => {
       updates
       |> List.fold_left(
            l =>
@@ -100,7 +100,7 @@ module Graph = {
              | _ => l,
            [],
          )
-      |> User.save;
+      |> User.apply;
       updates
       |> List.fold_left(
            l =>
@@ -109,7 +109,7 @@ module Graph = {
              | _ => l,
            [],
          )
-      |> Group.save;
+      |> Group.apply;
       updates
       |> List.fold_left(
            l =>
@@ -118,7 +118,7 @@ module Graph = {
              | _ => l,
            [],
          )
-      |> Post.save;
+      |> Post.apply;
     };
   };
 
@@ -241,7 +241,7 @@ describe("Set", ({test}) => {
         id: Rupp.Util.makeId(),
         name: "Linnéa",
         email: "linnea@wallen.co",
-        age: 2,
+        age: 35,
       };
     let family =
       Group.{
@@ -262,10 +262,20 @@ describe("Set", ({test}) => {
 
     expect.equal(me.email, "andreas@eldh.co");
 
-    Graph.Normalized.save(updates);
+    Graph.Normalized.apply(updates);
     User.printUndoHistory();
     User.printRedoHistory();
     expect.equal(User.get(miniMe.id).name, "Sixten Eldh");
+
+    User.applyRemoteOperations([
+      Add({
+        id: Rupp.Util.makeId(),
+        name: "Alien",
+        email: "alien@space.co",
+        age: 21111111,
+      }),
+      Update(mom.id, SetName("Linnea Eldh")),
+    ]);
 
     User.undo();
     print_endline("-----Undone-----");

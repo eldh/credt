@@ -6,8 +6,15 @@ let now = () => 0.;
 
 type id;
 type float;
+let lastId = ref(0);
+let castId: string => id = Obj.magic;
 
-let makeId: string => id = Obj.magic;
+let makeId: unit => id =
+  () => {
+    let id = lastId^ + 1;
+    lastId := id;
+    id |> string_of_int |> castId;
+  };
 
 module RList = (Config: ListConfig) => {
   open Config;
@@ -37,7 +44,7 @@ module RMap = (Config: MapConfig) => {
       let compare = Pervasives.compare;
     });
   type collection = IMap.t(t);
-  let internalId = "__internal__" |> makeId;
+  let internalId = "__internal__" |> castId;
   let internalData = IMap.empty;
   let wrapper = ref(internalData);
   type operation =

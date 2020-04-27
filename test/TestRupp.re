@@ -197,7 +197,7 @@ describe("Set", ({test}) => {
   test("should update item", ({expect}) => {
     let me =
       User.{
-        id: "1" |> Rupp.Util.makeId,
+        id: Rupp.Util.makeId(),
         name: "Andreas",
         email: "andreas@eldh.co",
         age: 35,
@@ -205,21 +205,21 @@ describe("Set", ({test}) => {
 
     let miniMe =
       User.{
-        id: "2" |> Rupp.Util.makeId,
+        id: Rupp.Util.makeId(),
         name: "Sixten",
         email: "sixten@eldh.co",
         age: 2,
       };
     let mom =
       User.{
-        id: "4" |> Rupp.Util.makeId,
+        id: Rupp.Util.makeId(),
         name: "Linnéa",
         email: "linnea@wallen.co",
         age: 2,
       };
     let family =
       Group.{
-        id: "3" |> Rupp.Util.makeId,
+        id: Rupp.Util.makeId(),
         name: "Eldhs",
         members: [miniMe.id, me.id, mom.id],
       };

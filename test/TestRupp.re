@@ -264,9 +264,21 @@ describe("Set", ({test}) => {
 
     Graph.Normalized.save(updates);
     User.printUndoHistory();
-    Group.printUndoHistory();
+    User.printRedoHistory();
     expect.equal(User.get(miniMe.id).name, "Sixten Eldh");
+
     User.undo();
+    print_endline("-----Undone-----");
+    User.printUndoHistory();
+    User.printRedoHistory();
+    expect.equal(User.get(miniMe.id).name, "Sixten");
+
+    User.redo();
+    print_endline("-----Redone-----");
+    User.printUndoHistory();
+    User.printRedoHistory();
+    expect.equal(User.get(miniMe.id).name, "Sixten Eldh");
+
     let graph = Graph.make();
     graph.groups
     |> List.iter((g: Graph.group) => {
@@ -277,7 +289,6 @@ describe("Set", ({test}) => {
             });
        });
     expect.equal(User.get(me.id).email, "a@eldh.co");
-    expect.equal(User.get(miniMe.id).name, "Sixten");
     expect.equal(User.get(miniMe.id).age, 2);
   })
 });

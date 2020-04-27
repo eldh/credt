@@ -50,10 +50,14 @@ module RMap = (Config: MapConfig) => {
     | Update(id, update);
 
   let undoHistory: ref(list(operation)) = ref([]);
-  // let redoHistory: ref(list(operation)) = ref([]);
+  let redoHistory: ref(list(operation)) = ref([]);
 
   let addUndo = undo => {
     undoHistory := [undo] @ undoHistory^;
+  };
+
+  let addRedo = redo => {
+    redoHistory := [redo] @ redoHistory^;
   };
 
   let stringOfOperation =
@@ -69,7 +73,16 @@ module RMap = (Config: MapConfig) => {
       };
 
   let printUndoHistory = () =>
-    undoHistory^ |> List.map(stringOfOperation) |> List.iter(print_endline);
+    undoHistory^
+    |> List.map(stringOfOperation)
+    |> List.fold_left((a, b) => {a ++ ", " ++ b}, "Undo: ")
+    |> print_endline;
+
+  let printRedoHistory = () =>
+    redoHistory^
+    |> List.map(stringOfOperation)
+    |> List.fold_left((a, b) => {a ++ ", " ++ b}, "Redo: ")
+    |> print_endline;
 
   type collection = IMap.t(t);
   let internalId = "__internal__" |> idOfString;
@@ -101,15 +114,25 @@ module RMap = (Config: MapConfig) => {
     wrapper := updatedInternalData;
   };
 
-  let save = updates =>
-    List.fold_left(handleOperation, getCollection(), updates) |> setMap;
+  let save = (~handleUndo=?, updates) =>
+    List.fold_left(handleOperation(~handleUndo?), getCollection(), updates)
+    |> setMap;
 
   let undo = () => {
     switch (undoHistory^) {
     | [] => ()
     | [a, ...rest] =>
-      [a] |> save;
+      [a] |> save(~handleUndo=addRedo);
       undoHistory := rest;
+    };
+  };
+
+  let redo = () => {
+    switch (redoHistory^) {
+    | [] => ()
+    | [a, ...rest] =>
+      [a] |> save;
+      redoHistory := rest;
     };
   };
 

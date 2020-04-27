@@ -84,15 +84,41 @@ module Graph = {
       | Group(Group.operation)
       | Post(Post.operation);
 
-    let handleUpdate = update => {
-      switch (update) {
-      | User(operation) => User.save([operation])
-      | Group(operation) => Group.save([operation])
-      | Post(operation) => Post.save([operation])
-      };
-    };
+    // let handleUpdate = updates => {
+    //   switch (updates) {
+    //   | User(operations) => User.save(operations)
+    //   | Group(operations) => Group.save(operations)
+    //   | Post(operations) => Post.save(operations)
+    //   };
+    // };
     let save = updates => {
-      List.iter(handleUpdate, updates);
+      updates
+      |> List.fold_left(
+           l =>
+             fun
+             | User(op) => l @ [op]
+             | _ => l,
+           [],
+         )
+      |> User.save;
+      updates
+      |> List.fold_left(
+           l =>
+             fun
+             | Group(op) => l @ [op]
+             | _ => l,
+           [],
+         )
+      |> Group.save;
+      updates
+      |> List.fold_left(
+           l =>
+             fun
+             | Post(op) => l @ [op]
+             | _ => l,
+           [],
+         )
+      |> Post.save;
     };
   };
 
@@ -237,20 +263,22 @@ describe("Set", ({test}) => {
     expect.equal(me.email, "andreas@eldh.co");
 
     Graph.Normalized.save(updates);
-    let me2 = User.get(me.id);
-    let sixten2 = User.get(miniMe.id);
+    User.printUndoHistory();
+    Group.printUndoHistory();
+    expect.equal(User.get(miniMe.id).name, "Sixten Eldh");
+    User.undo();
     let graph = Graph.make();
     graph.groups
     |> List.iter((g: Graph.group) => {
          print_endline("Group: " ++ g.name);
          g.members
          |> List.iter((g: Graph.groupUser) => {
-              print_endline("Group user: " ++ g.name)
+              print_endline("Group member: " ++ g.name)
             });
        });
-    expect.equal(me2.email, "a@eldh.co");
-    expect.equal(sixten2.name, "Sixten Eldh");
-    expect.equal(sixten2.age, 2);
+    expect.equal(User.get(me.id).email, "a@eldh.co");
+    expect.equal(User.get(miniMe.id).name, "Sixten");
+    expect.equal(User.get(miniMe.id).age, 2);
   })
 });
 cli();

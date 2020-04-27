@@ -7,13 +7,14 @@ let now = () => 0.;
 type id;
 type float;
 let lastId = ref(0);
-let castId: string => id = Obj.magic;
+let idOfString: string => id = Obj.magic;
+let stringOfId: id => string = Obj.magic;
 
 let makeId: unit => id =
   () => {
     let id = lastId^ + 1;
     lastId := id;
-    id |> string_of_int |> castId;
+    id |> string_of_int |> idOfString;
   };
 
 module RList = (Config: ListConfig) => {
@@ -43,27 +44,74 @@ module RMap = (Config: MapConfig) => {
       type t = id;
       let compare = Pervasives.compare;
     });
-  type collection = IMap.t(t);
-  let internalId = "__internal__" |> castId;
-  let internalData = IMap.empty;
-  let wrapper = ref(internalData);
   type operation =
     | Add(t)
     | Remove(id)
     | Update(id, update);
 
-  let handleUpdate = data => {
+  let undoHistory: ref(list(operation)) = ref([]);
+  // let redoHistory: ref(list(operation)) = ref([]);
+
+  let addUndo = undo => {
+    undoHistory := [undo] @ undoHistory^;
+  };
+
+  let stringOfOperation =
     fun
-    | Remove(id) => IMap.remove(id, data)
-    | Add(t) => IMap.add(t |> getId, t, data)
+    | Remove(id) => {
+        "Remove: " ++ (id |> stringOfId);
+      }
+    | Add(t) => {
+        "Add: " ++ (t |> print);
+      }
     | Update(id, update) => {
-        print_endline("herer___1: " ++ (id |> Obj.magic));
-        let (newData, _) = reducer(IMap.find(id, data), update);
+        "Update: " ++ (id |> stringOfId);
+      };
+
+  let printUndoHistory = () =>
+    undoHistory^ |> List.map(stringOfOperation) |> List.iter(print_endline);
+
+  type collection = IMap.t(t);
+  let internalId = "__internal__" |> idOfString;
+  let internalData = IMap.empty;
+  let wrapper = ref(internalData);
+
+  let getCollection = () => wrapper^;
+  let get = id => IMap.find(id, getCollection());
+
+  let handleOperation = (~handleUndo=addUndo, data) => {
+    fun
+    | Remove(id) => {
+        handleUndo(Add(get(id)));
+        IMap.remove(id, data);
+      }
+    | Add(t) => {
+        let id = t |> getId;
+        handleUndo(Remove(id));
+        IMap.add(id, t, data);
+      }
+    | Update(id, update) => {
+        let (newData, undo) = reducer(IMap.find(id, data), update);
+        handleUndo(Update(id, undo));
         IMap.add(id, newData, data);
       };
   };
 
-  let getCollection = () => wrapper^;
+  let setMap = updatedInternalData => {
+    wrapper := updatedInternalData;
+  };
+
+  let save = updates =>
+    List.fold_left(handleOperation, getCollection(), updates) |> setMap;
+
+  let undo = () => {
+    switch (undoHistory^) {
+    | [] => ()
+    | [a, ...rest] =>
+      [a] |> save;
+      undoHistory := rest;
+    };
+  };
 
   let printCollection = () => {
     print_endline(
@@ -73,14 +121,6 @@ module RMap = (Config: MapConfig) => {
     getCollection() |> IMap.iter((_, item) => print(item) |> print_endline);
   };
 
-  let setMap = updatedInternalData => {
-    wrapper := updatedInternalData;
-  };
-
   let toList = m =>
     m |> IMap.to_seq |> List.of_seq |> List.map(((id, item: t)) => item);
-  let save = updates => {
-    List.fold_left(handleUpdate, getCollection(), updates) |> setMap;
-  };
-  let get = id => IMap.find(id, getCollection());
 };

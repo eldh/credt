@@ -1,3 +1,4 @@
+exception NotImplemented;
 module type Config = {
   type t;
   type update;
@@ -16,7 +17,8 @@ module Make = (Config: Config) => {
   type operation =
     | Add(t)
     | Remove(Util.id)
-    | Update(Util.id, update);
+    | Update(Util.id, update)
+    | Transaction(list(operation));
 
   type collection = IMap.t(t);
   let internalId = "__internal__" |> Util.idOfString;
@@ -41,11 +43,13 @@ module Make = (Config: Config) => {
         let (newData, undo) = reducer(IMap.find(id, data), update);
         handleUndo(Update(id, undo));
         IMap.add(id, newData, data);
-      };
+      }
+    | Transaction(_) => raise(NotImplemented);
   };
 
   let setMap = updatedInternalData => {
     wrapper := updatedInternalData;
+    Ok();
   };
 
   /**

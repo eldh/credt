@@ -3,7 +3,8 @@ module Make =
          C: {
            type operation;
            let apply:
-             (~handleUndo: operation => unit, list(operation)) => unit;
+             (~handleUndo: operation => unit, list(operation)) =>
+             result(unit, list(Util.operationError));
          },
        ) => {
   let undoHistory: ref(list(C.operation)) = ref([]);
@@ -24,19 +25,27 @@ module Make =
   let canRedo = getRedoHistory() |> Stdlib.List.length > 0;
   let undo = () => {
     switch (undoHistory^) {
-    | [] => ()
+    | [] => Ok()
     | [a, ...rest] =>
-      [a] |> C.apply(~handleUndo=addRedo);
-      undoHistory := rest;
+      switch ([a] |> C.apply(~handleUndo=addRedo)) {
+      | Ok(_) as ok =>
+        undoHistory := rest;
+        ok;
+      | Error(_) as err => err
+      }
     };
   };
 
   let redo = () => {
     switch (redoHistory^) {
-    | [] => ()
+    | [] => Ok()
     | [a, ...rest] =>
-      [a] |> C.apply(~handleUndo=addUndo);
-      redoHistory := rest;
+      switch ([a] |> C.apply(~handleUndo=addUndo)) {
+      | Ok(_) as ok =>
+        redoHistory := rest;
+        ok;
+      | Error(_) as err => err
+      }
     };
   };
 };

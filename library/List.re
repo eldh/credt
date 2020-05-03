@@ -1,9 +1,26 @@
+exception NotImplemented;
 module type ListConfig = {
   type t;
   type update;
   let getId: t => Util.id;
   let print: t => string;
   let reducer: (t, update) => (t, update);
+};
+
+let listRemove = (fn, list) => {
+  let foundItem = ref(false);
+  let newList =
+    Stdlib.List.filter(
+      item => {
+        let res = fn(item);
+        if (!res) {
+          foundItem := true;
+        };
+        res;
+      },
+      list,
+    );
+  foundItem^ ? Ok(newList) : Error(Util.NotFound);
 };
 
 module Make = (Config: ListConfig) => {
@@ -16,13 +33,28 @@ module Make = (Config: ListConfig) => {
     | AddBefore(Util.id, t)
     | Remove(Util.id)
     | Replace(Util.id, t)
-    | Update(Util.id, update);
+    | Update(Util.id, update)
+    | Transaction(list(operation));
+
+  let string_of_operation =
+    fun
+    | Append(_t) => "Append"
+    | Prepend(_t) => "Prepend"
+    | AddAfter(_, _) => "AddAfter"
+    | AddBefore(_, _) => "AddBefore"
+    | Remove(_) => "Remove"
+    | Replace(_, _) => "Replace"
+    | Update(_, _) => "Update"
+    | Transaction(_) => "Transaction";
 
   type collection = list(t);
   let internalId = "__internal__" |> Util.idOfString;
   let wrapper: ref(collection) = ref([]);
 
   let getCollection = () => wrapper^;
+
+  let __resetCollection__ = () => wrapper := [];
+
   let get = id =>
     Stdlib.List.find(item => getId(item) === id, getCollection());
 
@@ -30,31 +62,30 @@ module Make = (Config: ListConfig) => {
     fun
     | Remove(id) => {
         handleUndo(Append(get(id))); // Todo put in correct place
-        Stdlib.List.filter(item => getId(item) !== id, data);
+        listRemove(item => getId(item) !== id, data);
       }
     | Append(t) => {
-        let id = t |> getId;
-        handleUndo(Remove(id));
-        data @ [t];
+        handleUndo(Remove(t |> getId));
+        Ok(data @ [t]);
       }
     | Prepend(t) => {
-        let id = t |> getId;
-        handleUndo(Remove(id));
-        [t] @ data;
+        handleUndo(Remove(t |> getId));
+        Ok([t] @ data);
       }
     | AddBefore(_id, t) => {
         // Todo implement
         let id = t |> getId;
         handleUndo(Remove(id));
-        data @ [t];
+        Ok(data @ [t]);
       }
     | AddAfter(_id, t) => {
         // Todo implement
         let id = t |> getId;
         handleUndo(Remove(id));
-        data @ [t];
+        Ok(data @ [t]);
       }
     | Update(id, update) => {
+        // TODO Handle error
         let (l, undo) =
           data
           |> Stdlib.List.fold_left(
@@ -70,16 +101,21 @@ module Make = (Config: ListConfig) => {
                ([], None),
              );
         switch (undo) {
-        | Some(undo) => handleUndo(Update(id, undo))
-        | None => ()
+        | Some(undo) =>
+          handleUndo(Update(id, undo));
+          Ok(l);
+        | None => Error(Util.NotFound)
         };
-        l;
       }
     | Replace(id, t) => {
+        // TODO Handle error
         let prevItem = Stdlib.List.find(item => getId(item) === id, data);
         handleUndo(Replace(id, prevItem));
-        data |> Stdlib.List.map(item => {item |> getId === id ? t : item});
-      };
+        Ok(
+          data |> Stdlib.List.map(item => {item |> getId === id ? t : item}),
+        );
+      }
+    | Transaction(_) => raise(NotImplemented);
   };
 
   let setData = updatedInternalData => {
@@ -89,13 +125,32 @@ module Make = (Config: ListConfig) => {
   /**
    * Apply a list of operations
    */
-  let baseApply = (~handleUndo, updates) =>
+  let baseApply = (~handleUndo, ops) =>
     Stdlib.List.fold_left(
-      handleOperation(~handleUndo),
-      getCollection(),
-      updates,
+      ((collection, errors), op) => {
+        print_endline(
+          (op |> string_of_operation)
+          ++ ": "
+          ++ (collection |> Stdlib.List.length |> string_of_int),
+        );
+        let res = handleOperation(~handleUndo, collection, op);
+        switch (res) {
+        | Ok(d) => (d, errors)
+        | Error(s) => (collection, [s, ...errors])
+        };
+      },
+      (getCollection(), []),
+      ops,
     )
-    |> setData;
+    |> (
+      ((list, errors)) => {
+        setData(list);
+        switch (errors) {
+        | [] => Ok()
+        | s => Error(s)
+        };
+      }
+    );
 
   /* Apply operations that should not be part of the undo/redo handling */
   let applyRemoteOperations = baseApply(~handleUndo=ignore);

@@ -16,11 +16,11 @@ module Make = (Config: Config) => {
     });
   let mapRemove = (id, data) =>
     try(Ok(IMap.remove(id, data))) {
-    | Not_found => Error(Util.NotFound)
+    | Not_found => Error(`NotFound)
     };
   let mapFind = (id, data) =>
     try(Ok(IMap.find(id, data))) {
-    | Not_found => Error(Util.NotFound)
+    | Not_found => Error(`NotFound)
     };
 
   type operation =
@@ -37,31 +37,29 @@ module Make = (Config: Config) => {
   let getCollection = () => wrapper^;
   let get = id => IMap.find(id, getCollection());
 
-  let handleOperation = (~handleUndo, data) => {
-    fun
-    | Remove(id) => {
-        switch (mapRemove(id, data)) {
-        | Ok(_) as a =>
-          handleUndo(Add(get(id)));
-          a;
-        | Error(_) as e => e
-        };
+  let handleOperation = (~handleUndo, data, op) => {
+    switch (op) {
+    | Remove(id) =>
+      switch (mapRemove(id, data)) {
+      | Ok(_) as a =>
+        handleUndo(Add(get(id)));
+        a;
+      | Error(_) => Error(Util.NotFound(op))
       }
-    | Add(t) => {
-        let id = t |> getId;
-        handleUndo(Remove(id));
-        Ok(IMap.add(id, t, data));
+    | Add(t) =>
+      let id = t |> getId;
+      handleUndo(Remove(id));
+      Ok(IMap.add(id, t, data));
+    | Update(id, update) =>
+      switch (mapFind(id, data)) {
+      | Ok(item) =>
+        let (newData, undo) = reducer(item, update);
+        handleUndo(Update(id, undo));
+        Ok(IMap.add(id, newData, data));
+      | Error(`NotFound) => Error(Util.NotFound(op))
       }
-    | Update(id, update) => {
-        switch (mapFind(id, data)) {
-        | Ok(item) =>
-          let (newData, undo) = reducer(item, update);
-          handleUndo(Update(id, undo));
-          Ok(IMap.add(id, newData, data));
-        | Error(Util.NotFound) as e => e
-        };
-      }
-    | Transaction(_) => raise(NotImplemented);
+    | Transaction(_) => raise(NotImplemented)
+    };
   };
 
   let setMap = updatedInternalData => {

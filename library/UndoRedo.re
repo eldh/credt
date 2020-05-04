@@ -4,7 +4,7 @@ module Make =
            type operation;
            let apply:
              (~handleUndo: operation => unit, list(operation)) =>
-             result(unit, list(Util.operationError));
+             result(unit, list(Util.operationError(operation)));
          },
        ) => {
   let undoHistory: ref(list(C.operation)) = ref([]);

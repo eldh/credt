@@ -1,7 +1,7 @@
 let now = () => 0.; // TODO obviously
 
-type operationError =
-  | NotFound;
+type operationError('a) =
+  | NotFound('a);
 
 type id;
 let lastId = ref(0);

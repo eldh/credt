@@ -20,7 +20,7 @@ let listRemove = (fn, list) => {
       },
       list,
     );
-  foundItem^ ? Ok(newList) : Error(Util.NotFound);
+  foundItem^ ? Ok(newList) : Error(`NotFound);
 };
 
 module Make = (Config: ListConfig) => {
@@ -58,65 +58,62 @@ module Make = (Config: ListConfig) => {
   let get = id =>
     Stdlib.List.find(item => getId(item) === id, getCollection());
 
-  let handleOperation = (~handleUndo, data) => {
-    fun
-    | Remove(id) => {
-        handleUndo(Append(get(id))); // Todo put in correct place
-        listRemove(item => getId(item) !== id, data);
-      }
-    | Append(t) => {
-        handleUndo(Remove(t |> getId));
-        Ok(data @ [t]);
-      }
-    | Prepend(t) => {
-        handleUndo(Remove(t |> getId));
-        Ok([t] @ data);
-      }
-    | AddBefore(_id, t) => {
-        // Todo implement
-        let id = t |> getId;
-        handleUndo(Remove(id));
-        Ok(data @ [t]);
-      }
-    | AddAfter(_id, t) => {
-        // Todo implement
-        let id = t |> getId;
-        handleUndo(Remove(id));
-        Ok(data @ [t]);
-      }
-    | Update(id, update) => {
-        let (l, undo) =
-          data
-          |> Stdlib.List.fold_left(
-               ((l, undoOp), item) => {
-                 item |> getId === id
-                   ? {
-                     let (newData, undo) = reducer(item, update);
+  let handleOperation = (~handleUndo, data, op) => {
+    switch (op) {
+    | Remove(id) =>
+      handleUndo(Append(get(id))); // Todo put in correct place
+      switch (listRemove(item => getId(item) !== id, data)) {
+      | Ok(_) as a => a
+      | Error(_) => Error(Util.NotFound(op))
+      };
+    | Append(t) =>
+      handleUndo(Remove(t |> getId));
+      Ok(data @ [t]);
+    | Prepend(t) =>
+      handleUndo(Remove(t |> getId));
+      Ok([t] @ data);
+    | AddBefore(_id, t) =>
+      // Todo implement
+      let id = t |> getId;
+      handleUndo(Remove(id));
+      Ok(data @ [t]);
+    | AddAfter(_id, t) =>
+      // Todo implement
+      let id = t |> getId;
+      handleUndo(Remove(id));
+      Ok(data @ [t]);
+    | Update(id, update) =>
+      let (l, undo) =
+        data
+        |> Stdlib.List.fold_left(
+             ((l, undoOp), item) => {
+               item |> getId === id
+                 ? {
+                   let (newData, undo) = reducer(item, update);
 
-                     ([newData, ...l], Some(undo));
-                   }
-                   : ([item, ...l], undoOp)
-               },
-               ([], None),
-             );
-        switch (undo) {
-        | Some(undo) =>
-          handleUndo(Update(id, undo));
-          Ok(l);
-        | None => Error(Util.NotFound)
-        };
+                   ([newData, ...l], Some(undo));
+                 }
+                 : ([item, ...l], undoOp)
+             },
+             ([], None),
+           );
+      switch (undo) {
+      | Some(undo) =>
+        handleUndo(Update(id, undo));
+        Ok(l);
+      | None => Error(Util.NotFound(op))
+      };
+    | Replace(id, t) =>
+      switch (Stdlib.List.find_opt(item => getId(item) === id, data)) {
+      | Some(item) =>
+        handleUndo(Replace(id, item));
+        Ok(
+          data |> Stdlib.List.map(item => {item |> getId === id ? t : item}),
+        );
+      | None => Error(Util.NotFound(op))
       }
-    | Replace(id, t) => {
-        switch (Stdlib.List.find_opt(item => getId(item) === id, data)) {
-        | Some(item) =>
-          handleUndo(Replace(id, item));
-          Ok(
-            data |> Stdlib.List.map(item => {item |> getId === id ? t : item}),
-          );
-        | None => Error(Util.NotFound)
-        };
-      }
-    | Transaction(_) => raise(NotImplemented);
+    | Transaction(_) => raise(NotImplemented)
+    };
   };
 
   let setData = updatedInternalData => {

@@ -14,6 +14,15 @@ module Make = (Config: Config) => {
       type t = Util.id;
       let compare = Pervasives.compare;
     });
+  let mapRemove = (id, data) =>
+    try(Ok(IMap.remove(id, data))) {
+    | Not_found => Error(Util.NotFound)
+    };
+  let mapFind = (id, data) =>
+    try(Ok(IMap.find(id, data))) {
+    | Not_found => Error(Util.NotFound)
+    };
+
   type operation =
     | Add(t)
     | Remove(Util.id)
@@ -31,37 +40,66 @@ module Make = (Config: Config) => {
   let handleOperation = (~handleUndo, data) => {
     fun
     | Remove(id) => {
-        handleUndo(Add(get(id)));
-        IMap.remove(id, data);
+        switch (mapRemove(id, data)) {
+        | Ok(_) as a =>
+          handleUndo(Add(get(id)));
+          a;
+        | Error(_) as e => e
+        };
       }
     | Add(t) => {
         let id = t |> getId;
         handleUndo(Remove(id));
-        IMap.add(id, t, data);
+        Ok(IMap.add(id, t, data));
       }
     | Update(id, update) => {
-        let (newData, undo) = reducer(IMap.find(id, data), update);
-        handleUndo(Update(id, undo));
-        IMap.add(id, newData, data);
+        switch (mapFind(id, data)) {
+        | Ok(item) =>
+          let (newData, undo) = reducer(item, update);
+          handleUndo(Update(id, undo));
+          Ok(IMap.add(id, newData, data));
+        | Error(Util.NotFound) as e => e
+        };
       }
     | Transaction(_) => raise(NotImplemented);
   };
 
   let setMap = updatedInternalData => {
     wrapper := updatedInternalData;
-    Ok();
   };
 
   /**
    * Apply a list of operations
    */
-  let baseApply = (~handleUndo, updates) =>
+  let baseApply = (~handleUndo, ops) =>
     Stdlib.List.fold_left(
-      handleOperation(~handleUndo),
-      getCollection(),
-      updates,
+      ((collection, errors), op) => {
+        let res = handleOperation(~handleUndo, collection, op);
+        switch (res) {
+        | Ok(d) => (d, errors)
+        | Error(s) => (collection, [s, ...errors])
+        };
+      },
+      (getCollection(), []),
+      ops,
     )
-    |> setMap;
+    |> (
+      ((list, errors)) => {
+        setMap(list);
+        switch (errors) {
+        | [] => Ok()
+        | s => Error(s)
+        };
+      }
+    );
+
+  // let baseApply = (~handleUndo, updates) =>
+  //   Stdlib.List.fold_left(
+  //     handleOperation(~handleUndo),
+  //     getCollection(),
+  //     updates,
+  //   )
+  //   |> setMap;
 
   /* Apply operations that should not be part of the undo/redo handling */
   let applyRemoteOperations = baseApply(~handleUndo=ignore);

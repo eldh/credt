@@ -67,10 +67,12 @@ describe("List", ({test, testOnly}) => {
     let addOp = UserList.[Append(user)];
     let removeOp = UserList.[Remove(user.id)];
     let editOp = UserList.[Update(user.id, SetName("New name"))];
+    let replaceOp = UserList.[Replace(user.id, makeUser(2))];
 
     expect.result(addOp |> UserList.apply).toBeOk();
     expect.result(removeOp |> UserList.apply).toBeOk();
     expect.result(editOp |> UserList.apply).toBeError();
+    expect.result(replaceOp |> UserList.apply).toBeError();
   });
 
   test("should handle multiple items", ({expect}) => {

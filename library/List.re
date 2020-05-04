@@ -85,7 +85,6 @@ module Make = (Config: ListConfig) => {
         Ok(data @ [t]);
       }
     | Update(id, update) => {
-        // TODO Handle error
         let (l, undo) =
           data
           |> Stdlib.List.fold_left(
@@ -108,12 +107,14 @@ module Make = (Config: ListConfig) => {
         };
       }
     | Replace(id, t) => {
-        // TODO Handle error
-        let prevItem = Stdlib.List.find(item => getId(item) === id, data);
-        handleUndo(Replace(id, prevItem));
-        Ok(
-          data |> Stdlib.List.map(item => {item |> getId === id ? t : item}),
-        );
+        switch (Stdlib.List.find_opt(item => getId(item) === id, data)) {
+        | Some(item) =>
+          handleUndo(Replace(id, item));
+          Ok(
+            data |> Stdlib.List.map(item => {item |> getId === id ? t : item}),
+          );
+        | None => Error(Util.NotFound)
+        };
       }
     | Transaction(_) => raise(NotImplemented);
   };
@@ -128,11 +129,6 @@ module Make = (Config: ListConfig) => {
   let baseApply = (~handleUndo, ops) =>
     Stdlib.List.fold_left(
       ((collection, errors), op) => {
-        print_endline(
-          (op |> string_of_operation)
-          ++ ": "
-          ++ (collection |> Stdlib.List.length |> string_of_int),
-        );
         let res = handleOperation(~handleUndo, collection, op);
         switch (res) {
         | Ok(d) => (d, errors)
@@ -152,7 +148,9 @@ module Make = (Config: ListConfig) => {
       }
     );
 
-  /* Apply operations that should not be part of the undo/redo handling */
+  /**
+   * Apply operations that should not be part of the undo/redo handling
+   * */
   let applyRemoteOperations = baseApply(~handleUndo=ignore);
 
   module Undo =

@@ -1,4 +1,4 @@
 open TestFramework;
-// include MapTest;
+include MapTest;
 include ListTest;
 cli();

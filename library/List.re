@@ -72,16 +72,42 @@ module Make = (Config: ListConfig) => {
     | Prepend(t) =>
       handleUndo(Remove(t |> getId));
       Ok([t] @ data);
-    | AddBefore(_id, t) =>
-      // Todo implement
-      let id = t |> getId;
-      handleUndo(Remove(id));
-      Ok(data @ [t]);
-    | AddAfter(_id, t) =>
-      // Todo implement
-      let id = t |> getId;
-      handleUndo(Remove(id));
-      Ok(data @ [t]);
+    | AddBefore(id, t) =>
+      let newItemId = t |> getId;
+      handleUndo(Remove(newItemId));
+      let foundItem = ref(false);
+      let res =
+        Stdlib.List.fold_right(
+          (item, newList) => {
+            item |> getId === id
+              ? {
+                foundItem := true;
+                [t, item, ...newList];
+              }
+              : [item, ...newList]
+          },
+          data,
+          [],
+        );
+      foundItem^ ? Ok(res) : Error(Util.NotFound(op));
+    | AddAfter(id, t) =>
+      let newItemId = t |> getId;
+      handleUndo(Remove(newItemId));
+      let foundItem = ref(false);
+      let res =
+        Stdlib.List.fold_right(
+          (item, newList) => {
+            item |> getId === id
+              ? {
+                foundItem := true;
+                [item, t, ...newList];
+              }
+              : [item, ...newList]
+          },
+          data,
+          [],
+        );
+      foundItem^ ? Ok(res) : Error(Util.NotFound(op));
     | Update(id, update) =>
       let (l, undo) =
         data
@@ -164,6 +190,7 @@ module Make = (Config: ListConfig) => {
 
   let length = () => getCollection() |> Stdlib.List.length;
 
+  let print = Config.print;
   let printCollection = () => {
     print_newline();
     print_endline("List: ");

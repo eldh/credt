@@ -61,6 +61,82 @@ describe("List", ({test, testOnly}) => {
     |> ignore;
     expect.equal(UserList.length(), 10);
   });
+  test("should add after", ({expect}) => {
+    userStdList
+    |> Stdlib.List.map(u => UserList.Append(u))
+    |> Stdlib.List.rev
+    |> UserList.apply
+    |> ignore;
+    expect.equal(UserList.length(), 10);
+    let testUser = makeUser(122);
+    expect.result(
+      UserList.(
+        [
+          AddAfter(
+            List.nth(UserList.getCollection(), 3) |> (u => u.id),
+            testUser,
+          ),
+        ]
+        |> apply
+      ),
+    ).
+      toBeOk();
+    expect.equal(
+      List.nth(UserList.getCollection(), 4) |> (u => u.id),
+      testUser.id,
+    );
+  });
+  test("should add before", ({expect}) => {
+    userStdList
+    |> Stdlib.List.map(u => UserList.Append(u))
+    |> Stdlib.List.rev
+    |> UserList.apply
+    |> ignore;
+    expect.equal(UserList.length(), 10);
+    let testUser = makeUser(122);
+    expect.result(
+      UserList.(
+        [
+          AddBefore(
+            List.nth(UserList.getCollection(), 3) |> (u => u.id),
+            testUser,
+          ),
+        ]
+        |> apply
+      ),
+    ).
+      toBeOk();
+    expect.equal(
+      List.nth(UserList.getCollection(), 3) |> (u => u.id),
+      testUser.id,
+    );
+  });
+  test("should fail to add after invalid id", ({expect}) => {
+    userStdList
+    |> Stdlib.List.map(u => UserList.Append(u))
+    |> Stdlib.List.rev
+    |> UserList.apply
+    |> ignore;
+    expect.equal(UserList.length(), 10);
+    let notAddedUser = makeUser(11232323);
+    let testUser = makeUser(122);
+    expect.result(UserList.([AddAfter(notAddedUser.id, testUser)] |> apply)).
+      toBeError();
+  });
+  test("should fail to add before invalid id", ({expect}) => {
+    userStdList
+    |> Stdlib.List.map(u => UserList.Append(u))
+    |> Stdlib.List.rev
+    |> UserList.apply
+    |> ignore;
+    expect.equal(UserList.length(), 10);
+    let notAddedUser = makeUser(11232323);
+    let testUser = makeUser(122);
+    expect.result(
+      UserList.([AddBefore(notAddedUser.id, testUser)] |> apply),
+    ).
+      toBeError();
+  });
 
   test("should handle illegal operation", ({expect}) => {
     let user = makeUser(1);
@@ -154,6 +230,5 @@ describe("List", ({test, testOnly}) => {
     expect.result(UserList.redo()).toBeOk();
     expect.equal(UserList.get(miniMe.id).name, "Sixten Eldh");
     expect.equal(UserList.get(miniMe.id).age, 2);
-    UserList.printCollection();
   });
 });

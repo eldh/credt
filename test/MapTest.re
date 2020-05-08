@@ -104,6 +104,7 @@ describe("Map", ({test, testOnly}) => {
     expect.equal(UserMap.get(me.id).email, "a@eldh.co");
     expect.equal(UserMap.get(miniMe.id).age, 2);
   });
+
   test("should handle undo & redo", ({expect}) => {
     let miniMe =
       UserMap.{
@@ -151,6 +152,5 @@ describe("Map", ({test, testOnly}) => {
     expect.result(UserMap.redo()).toBeOk();
     expect.equal(UserMap.get(miniMe.id).name, "Sixten Eldh");
     expect.equal(UserMap.get(miniMe.id).age, 2);
-    UserMap.printCollection();
   });
 });

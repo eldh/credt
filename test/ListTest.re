@@ -33,8 +33,10 @@ module UserList = {
       | SetAge(age) => ({...user, age}, SetAge(user.age));
   });
 };
+open UserList;
+
 let makeUser = i => {
-  UserList.id: Rupp.Util.makeId(),
+  id: Rupp.Util.makeId(),
   name: "Name" ++ (i |> string_of_int),
   email: "email@" ++ (i |> string_of_int),
   age: i * 2,
@@ -48,232 +50,210 @@ let {describe, describeSkip, describeOnly} =
        testLifecycle
        |> beforeAll(() => ())
        |> afterAll(() => ())
-       |> beforeEach(() => {UserList.__resetCollection__()})
+       |> beforeEach(() => {__resetCollection__()})
        |> afterEach(() => ())
      )
   |> build;
 
 describe("List", ({test, testOnly}) => {
   test("should add", ({expect}) => {
-    userStdList
-    |> Stdlib.List.map(u => UserList.Append(u))
-    |> UserList.apply
-    |> ignore;
-    expect.equal(UserList.length(), 10);
+    userStdList |> Stdlib.List.map(u => Append(u)) |> apply |> ignore;
+    expect.equal(length(), 10);
   });
   test("should add after", ({expect}) => {
     userStdList
-    |> Stdlib.List.map(u => UserList.Append(u))
+    |> Stdlib.List.map(u => Append(u))
     |> Stdlib.List.rev
-    |> UserList.apply
+    |> apply
     |> ignore;
-    expect.equal(UserList.length(), 10);
+    expect.equal(length(), 10);
     let testUser = makeUser(122);
     expect.result(
-      UserList.(
-        [
-          AddAfter(
-            List.nth(UserList.getCollection(), 3) |> (u => u.id),
-            testUser,
-          ),
-        ]
-        |> apply
-      ),
+      [AddAfter(List.nth(getCollection(), 3) |> (u => u.id), testUser)]
+      |> apply,
     ).
       toBeOk();
-    expect.equal(
-      List.nth(UserList.getCollection(), 4) |> (u => u.id),
-      testUser.id,
-    );
+    expect.equal(List.nth(getCollection(), 4) |> (u => u.id), testUser.id);
   });
+
   test("should add before", ({expect}) => {
     userStdList
-    |> Stdlib.List.map(u => UserList.Append(u))
+    |> Stdlib.List.map(u => Append(u))
     |> Stdlib.List.rev
-    |> UserList.apply
+    |> apply
     |> ignore;
-    expect.equal(UserList.length(), 10);
+    expect.equal(length(), 10);
     let testUser = makeUser(122);
     expect.result(
-      UserList.(
-        [
-          AddBefore(
-            List.nth(UserList.getCollection(), 3) |> (u => u.id),
-            testUser,
-          ),
-        ]
-        |> apply
-      ),
+      [AddBefore(List.nth(getCollection(), 3) |> (u => u.id), testUser)]
+      |> apply,
     ).
       toBeOk();
-    expect.equal(
-      List.nth(UserList.getCollection(), 3) |> (u => u.id),
-      testUser.id,
-    );
+    expect.equal(List.nth(getCollection(), 3) |> (u => u.id), testUser.id);
   });
+
   test("should fail to add after invalid id", ({expect}) => {
     userStdList
-    |> Stdlib.List.map(u => UserList.Append(u))
+    |> Stdlib.List.map(u => Append(u))
     |> Stdlib.List.rev
-    |> UserList.apply
+    |> apply
     |> ignore;
-    expect.equal(UserList.length(), 10);
+    expect.equal(length(), 10);
     let notAddedUser = makeUser(11232323);
     let testUser = makeUser(122);
-    expect.result(UserList.([AddAfter(notAddedUser.id, testUser)] |> apply)).
-      toBeError();
+    expect.result([AddAfter(notAddedUser.id, testUser)] |> apply).toBeError();
   });
+
   test("should fail to add before invalid id", ({expect}) => {
     userStdList
-    |> Stdlib.List.map(u => UserList.Append(u))
+    |> Stdlib.List.map(u => Append(u))
     |> Stdlib.List.rev
-    |> UserList.apply
+    |> apply
     |> ignore;
-    expect.equal(UserList.length(), 10);
+    expect.equal(length(), 10);
     let notAddedUser = makeUser(11232323);
     let testUser = makeUser(122);
-    expect.result(
-      UserList.([AddBefore(notAddedUser.id, testUser)] |> apply),
-    ).
-      toBeError();
+    expect.result([AddBefore(notAddedUser.id, testUser)] |> apply).toBeError();
   });
 
   test("should handle illegal operation", ({expect}) => {
     let user = makeUser(1);
-    let addOp = UserList.[Append(user)];
-    let removeOp = UserList.[Remove(user.id)];
-    let editOp = UserList.[Update(user.id, SetName("New name"))];
-    let replaceOp = UserList.[Replace(user.id, makeUser(2))];
+    let addOp = [Append(user)];
+    let removeOp = [Remove(user.id)];
+    let editOp = [Update(user.id, SetName("New name"))];
+    let replaceOp = [Replace(user.id, makeUser(2))];
 
-    expect.result(addOp |> UserList.apply).toBeOk();
-    expect.result(removeOp |> UserList.apply).toBeOk();
-    expect.result(editOp |> UserList.apply).toBeError();
-    expect.result(replaceOp |> UserList.apply).toBeError();
+    expect.result(addOp |> apply).toBeOk();
+    expect.result(removeOp |> apply).toBeOk();
+    expect.result(editOp |> apply).toBeError();
+    expect.result(replaceOp |> apply).toBeError();
+  });
+
+  test("should correctly undo remove operation", ({expect}) => {
+    userStdList |> Stdlib.List.map(u => Append(u)) |> apply |> ignore;
+    let unluckyUser = Stdlib.List.nth(userStdList, 3);
+    let removeOp = [Remove(unluckyUser.id)];
+
+    expect.result(removeOp |> apply).toBeOk();
+    expect.result(undo()).toBeOk();
+    expect.equal(unluckyUser.id, Stdlib.List.nth(getCollection(), 3).id);
   });
 
   test("should handle multiple items", ({expect}) => {
-    let me =
-      UserList.{
-        id: Rupp.Util.makeId(),
-        name: "Andreas",
-        email: "andreas@eldh.co",
-        age: 35,
-      };
+    let me = {
+      id: Rupp.Util.makeId(),
+      name: "Andreas",
+      email: "andreas@eldh.co",
+      age: 35,
+    };
 
-    let miniMe =
-      UserList.{
-        id: Rupp.Util.makeId(),
-        name: "Sixten",
-        email: "sixten@eldh.co",
-        age: 2,
-      };
+    let miniMe = {
+      id: Rupp.Util.makeId(),
+      name: "Sixten",
+      email: "sixten@eldh.co",
+      age: 2,
+    };
 
     expect.result(
-      UserList.[
+      [
         Append(me),
         Update(me.id, SetEmail("a@eldh.co")),
         Append(miniMe),
         Update(miniMe.id, SetName("Sixten Eldh")),
       ]
-      |> UserList.apply,
+      |> apply,
     ).
       toBeOk();
 
-    expect.equal(UserList.get(miniMe.id).name, "Sixten Eldh");
-    expect.equal(UserList.get(me.id).email, "a@eldh.co");
-    expect.equal(UserList.get(miniMe.id).age, 2);
+    expect.equal(get(miniMe.id).name, "Sixten Eldh");
+    expect.equal(get(me.id).email, "a@eldh.co");
+    expect.equal(get(miniMe.id).age, 2);
   });
 
   test("should handle ok transaction", ({expect}) => {
-    let me =
-      UserList.{
-        id: Rupp.Util.makeId(),
-        name: "Andreas",
-        email: "andreas@eldh.co",
-        age: 35,
-      };
+    let me = {
+      id: Rupp.Util.makeId(),
+      name: "Andreas",
+      email: "andreas@eldh.co",
+      age: 35,
+    };
 
-    let miniMe =
-      UserList.{
-        id: Rupp.Util.makeId(),
-        name: "Sixten",
-        email: "sixten@eldh.co",
-        age: 2,
-      };
+    let miniMe = {
+      id: Rupp.Util.makeId(),
+      name: "Sixten",
+      email: "sixten@eldh.co",
+      age: 2,
+    };
 
     expect.result(
-      UserList.[
+      [
         Append(me),
         Update(me.id, SetEmail("a@eldh.co")),
         Append(miniMe),
         Update(miniMe.id, SetName("Sixten Eldh")),
       ]
-      |> UserList.applyTransaction,
+      |> applyTransaction,
     ).
       toBeOk();
 
-    expect.equal(UserList.get(miniMe.id).name, "Sixten Eldh");
-    expect.equal(UserList.get(me.id).email, "a@eldh.co");
-    expect.equal(UserList.get(miniMe.id).age, 2);
-    expect.equal(UserList.getUndoHistory() |> Stdlib.List.length, 1);
-    expect.equal(UserList.getRedoHistory() |> Stdlib.List.length, 0);
+    expect.equal(get(miniMe.id).name, "Sixten Eldh");
+    expect.equal(get(me.id).email, "a@eldh.co");
+    expect.equal(get(miniMe.id).age, 2);
+    expect.equal(getUndoHistory() |> Stdlib.List.length, 1);
+    expect.equal(getRedoHistory() |> Stdlib.List.length, 0);
   });
 
   test("should roll back transaction", ({expect}) => {
-    let me =
-      UserList.{
-        id: Rupp.Util.makeId(),
-        name: "Andreas",
-        email: "andreas@eldh.co",
-        age: 35,
-      };
+    let me = {
+      id: Rupp.Util.makeId(),
+      name: "Andreas",
+      email: "andreas@eldh.co",
+      age: 35,
+    };
 
-    let miniMe =
-      UserList.{
-        id: Rupp.Util.makeId(),
-        name: "Sixten",
-        email: "sixten@eldh.co",
-        age: 2,
-      };
+    let miniMe = {
+      id: Rupp.Util.makeId(),
+      name: "Sixten",
+      email: "sixten@eldh.co",
+      age: 2,
+    };
 
     expect.result(
-      UserList.[
+      [
         Append(me),
         Remove(me.id),
         Update(me.id, SetEmail("a@eldh.co")),
         Append(miniMe),
         Update(miniMe.id, SetName("Sixten Eldh")),
       ]
-      |> UserList.applyTransaction,
+      |> applyTransaction,
     ).
       toBeError();
-    expect.equal(UserList.getCollection() |> Stdlib.List.length, 0);
-    expect.equal(UserList.getUndoHistory() |> Stdlib.List.length, 0);
-    expect.equal(UserList.getRedoHistory() |> Stdlib.List.length, 0);
+    expect.equal(getCollection() |> Stdlib.List.length, 0);
+    expect.equal(getUndoHistory() |> Stdlib.List.length, 0);
+    expect.equal(getRedoHistory() |> Stdlib.List.length, 0);
   });
 
   test("should handle undo & redo", ({expect}) => {
-    let miniMe =
-      UserList.{
-        id: Rupp.Util.makeId(),
-        name: "Sixten",
-        email: "sixten@eldh.co",
-        age: 2,
-      };
+    let miniMe = {
+      id: Rupp.Util.makeId(),
+      name: "Sixten",
+      email: "sixten@eldh.co",
+      age: 2,
+    };
     expect.result(
-      UserList.[Append(miniMe), Update(miniMe.id, SetName("Sixten Eldh"))]
-      |> UserList.apply,
+      [Append(miniMe), Update(miniMe.id, SetName("Sixten Eldh"))] |> apply,
     ).
       toBeOk();
-    expect.equal(UserList.get(miniMe.id).name, "Sixten Eldh");
+    expect.equal(get(miniMe.id).name, "Sixten Eldh");
 
     // Undo queue
-    let previousUndoLength = UserList.getUndoHistory() |> Stdlib.List.length;
-    expect.result(UserList.undo()).toBeOk();
-    let newUndoLength = UserList.getUndoHistory() |> Stdlib.List.length;
+    let previousUndoLength = getUndoHistory() |> Stdlib.List.length;
+    expect.result(undo()).toBeOk();
+    let newUndoLength = getUndoHistory() |> Stdlib.List.length;
     expect.equal(newUndoLength, previousUndoLength - 1);
     expect.result(
-      UserList.applyRemoteOperations([
+      applyRemoteOperations([
         Append({
           id: Rupp.Util.makeId(),
           name: "Alien",
@@ -286,17 +266,14 @@ describe("List", ({test, testOnly}) => {
       toBeOk();
 
     // Remote operations should not affect undo queue
-    expect.equal(
-      newUndoLength,
-      UserList.getUndoHistory() |> Stdlib.List.length,
-    );
+    expect.equal(newUndoLength, getUndoHistory() |> Stdlib.List.length);
 
     // But values should update
-    expect.equal(UserList.get(miniMe.id).name, "Sxtn");
+    expect.equal(get(miniMe.id).name, "Sxtn");
 
     // Redo still works, acts as a new update
-    expect.result(UserList.redo()).toBeOk();
-    expect.equal(UserList.get(miniMe.id).name, "Sixten Eldh");
-    expect.equal(UserList.get(miniMe.id).age, 2);
+    expect.result(redo()).toBeOk();
+    expect.equal(get(miniMe.id).name, "Sixten Eldh");
+    expect.equal(get(miniMe.id).age, 2);
   });
 });

@@ -184,6 +184,74 @@ describe("List", ({test, testOnly}) => {
     expect.equal(UserList.get(miniMe.id).age, 2);
   });
 
+  test("should handle ok transaction", ({expect}) => {
+    let me =
+      UserList.{
+        id: Rupp.Util.makeId(),
+        name: "Andreas",
+        email: "andreas@eldh.co",
+        age: 35,
+      };
+
+    let miniMe =
+      UserList.{
+        id: Rupp.Util.makeId(),
+        name: "Sixten",
+        email: "sixten@eldh.co",
+        age: 2,
+      };
+
+    expect.result(
+      UserList.[
+        Append(me),
+        Update(me.id, SetEmail("a@eldh.co")),
+        Append(miniMe),
+        Update(miniMe.id, SetName("Sixten Eldh")),
+      ]
+      |> UserList.applyTransaction,
+    ).
+      toBeOk();
+
+    expect.equal(UserList.get(miniMe.id).name, "Sixten Eldh");
+    expect.equal(UserList.get(me.id).email, "a@eldh.co");
+    expect.equal(UserList.get(miniMe.id).age, 2);
+    expect.equal(UserList.getUndoHistory() |> Stdlib.List.length, 1);
+    expect.equal(UserList.getRedoHistory() |> Stdlib.List.length, 0);
+  });
+
+  test("should roll back transaction", ({expect}) => {
+    let me =
+      UserList.{
+        id: Rupp.Util.makeId(),
+        name: "Andreas",
+        email: "andreas@eldh.co",
+        age: 35,
+      };
+
+    let miniMe =
+      UserList.{
+        id: Rupp.Util.makeId(),
+        name: "Sixten",
+        email: "sixten@eldh.co",
+        age: 2,
+      };
+
+    expect.result(
+      UserList.[
+        Append(me),
+        Remove(me.id),
+        Update(me.id, SetEmail("a@eldh.co")),
+        Append(miniMe),
+        Update(miniMe.id, SetName("Sixten Eldh")),
+      ]
+      |> UserList.applyTransaction,
+    ).
+      toBeError();
+    expect.equal(UserList.getCollection() |> Stdlib.List.length, 0);
+    expect.equal(UserList.getUndoHistory() |> Stdlib.List.length, 0);
+    expect.equal(UserList.getRedoHistory() |> Stdlib.List.length, 0);
+  });
+
   test("should handle undo & redo", ({expect}) => {
     let miniMe =
       UserList.{

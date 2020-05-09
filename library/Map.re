@@ -26,8 +26,7 @@ module Make = (Config: Config) => {
   type operation =
     | Add(t)
     | Remove(Util.id)
-    | Update(Util.id, update)
-    | Transaction(list(operation));
+    | Update(Util.id, update);
 
   type collection = IMap.t(t);
   let internalId = "__internal__" |> Util.idOfString;
@@ -58,7 +57,7 @@ module Make = (Config: Config) => {
         Ok(IMap.add(id, newData, data));
       | Error(`NotFound) => Error(Util.NotFound(op))
       }
-    | Transaction(_) => raise(NotImplemented)
+    // | Transaction(_) => raise(NotImplemented)
     };
   };
 
@@ -108,11 +107,13 @@ module Make = (Config: Config) => {
       let apply = baseApply;
     });
 
-  let apply = baseApply(~handleUndo=Undo.addUndo);
+  let apply = Undo.apply;
+  let applyTransaction = Undo.applyTransaction;
 
   let undo = Undo.undo;
   let getUndoHistory = Undo.getUndoHistory;
   let redo = Undo.redo;
+  let getRedoHistory = Undo.getRedoHistory;
 
   let printCollection = () => {
     print_newline();

@@ -22,6 +22,10 @@ let listRemove = (fn, list) => {
     );
   foundItem^ ? Ok(newList) : Error(`NotFound);
 };
+let listFind = (fn, data) =>
+  try(Ok(Stdlib.List.find(fn, data))) {
+  | Not_found => Error(`NotFound)
+  };
 
 module Make = (Config: ListConfig) => {
   open Config;
@@ -33,8 +37,7 @@ module Make = (Config: ListConfig) => {
     | AddBefore(Util.id, t)
     | Remove(Util.id)
     | Replace(Util.id, t)
-    | Update(Util.id, update)
-    | Transaction(list(operation));
+    | Update(Util.id, update);
 
   let string_of_operation =
     fun
@@ -44,8 +47,7 @@ module Make = (Config: ListConfig) => {
     | AddBefore(_, _) => "AddBefore"
     | Remove(_) => "Remove"
     | Replace(_, _) => "Replace"
-    | Update(_, _) => "Update"
-    | Transaction(_) => "Transaction";
+    | Update(_, _) => "Update";
 
   type collection = list(t);
   let internalId = "__internal__" |> Util.idOfString;
@@ -53,18 +55,24 @@ module Make = (Config: ListConfig) => {
 
   let getCollection = () => wrapper^;
 
-  let __resetCollection__ = () => wrapper := [];
-
   let get = id =>
     Stdlib.List.find(item => getId(item) === id, getCollection());
+
+  let setData = updatedInternalData => {
+    wrapper := updatedInternalData;
+  };
 
   let handleOperation = (~handleUndo, data, op) => {
     switch (op) {
     | Remove(id) =>
-      handleUndo(Append(get(id))); // Todo put in correct place
-      switch (listRemove(item => getId(item) !== id, data)) {
-      | Ok(_) as a => a
-      | Error(_) => Error(Util.NotFound(op))
+      let item = listFind(item => getId(item) === id, data);
+      switch (item, listRemove(item => getId(item) !== id, data)) {
+      | (Ok(i), Ok(_) as a) =>
+        handleUndo(Append(i)); // Todo put in correct place
+        a;
+      | (Error(_), Ok(_))
+      | (Ok(_), Error(_))
+      | (Error(_), Error(_)) => Error(Util.NotFound(op))
       };
     | Append(t) =>
       handleUndo(Remove(t |> getId));
@@ -138,38 +146,32 @@ module Make = (Config: ListConfig) => {
         );
       | None => Error(Util.NotFound(op))
       }
-    | Transaction(_) => raise(NotImplemented)
     };
   };
-
-  let setData = updatedInternalData => {
-    wrapper := updatedInternalData;
-  };
-
-  /**
-   * Apply a list of operations
-   */
-  let baseApply = (~handleUndo, ops) =>
-    Stdlib.List.fold_left(
-      ((collection, errors), op) => {
-        let res = handleOperation(~handleUndo, collection, op);
-        switch (res) {
-        | Ok(d) => (d, errors)
-        | Error(s) => (collection, [s, ...errors])
-        };
-      },
-      (getCollection(), []),
-      ops,
-    )
-    |> (
-      ((list, errors)) => {
-        setData(list);
-        switch (errors) {
-        | [] => Ok()
-        | s => Error(s)
-        };
-      }
-    );
+  let baseApply:
+    (~handleUndo: operation => unit, list(operation)) =>
+    result(unit, list(Util.operationError(operation))) =
+    (~handleUndo, ops) =>
+      Stdlib.List.fold_left(
+        ((collection, errors), op) => {
+          let res = handleOperation(~handleUndo, collection, op);
+          switch (res) {
+          | Ok(d) => (d, errors)
+          | Error(s) => (collection, [s, ...errors])
+          };
+        },
+        (getCollection(), []),
+        ops,
+      )
+      |> (
+        ((list, errors)) => {
+          setData(list);
+          switch (errors) {
+          | [] => Ok()
+          | s => Error(s)
+          };
+        }
+      );
 
   /**
    * Apply operations that should not be part of the undo/redo handling
@@ -182,13 +184,27 @@ module Make = (Config: ListConfig) => {
       let apply = baseApply;
     });
 
-  let apply = baseApply(~handleUndo=Undo.addUndo);
+  let apply = Undo.apply;
+  let applyTransaction = ops => {
+    let prevCollection = getCollection();
+    switch (Undo.applyTransaction(ops)) {
+    | Ok(data) as ok => ok
+    | Error(_) as err =>
+      setData(prevCollection);
+      err;
+    };
+  };
 
   let undo = Undo.undo;
   let getUndoHistory = Undo.getUndoHistory;
   let redo = Undo.redo;
+  let getRedoHistory = Undo.getRedoHistory;
 
   let length = () => getCollection() |> Stdlib.List.length;
+  let __resetCollection__ = () => {
+    wrapper := [];
+    Undo.__reset__();
+  };
 
   let print = Config.print;
   let printCollection = () => {

@@ -27,12 +27,36 @@ let listFind = (fn, data) =>
   | Not_found => Error(`NotFound)
   };
 
+let rec __findExn = (index, fn, lst) =>
+  switch (lst) {
+  | [] => raise(Failure("Not Found"))
+  | [h, ...t] =>
+    if (fn(h)) {
+      (index, h);
+    } else {
+      __findExn(1 + index, fn, t);
+    }
+  };
+
+let rec __insertAtExn = (index, item, currentIndex, lst) =>
+  if (index >= Stdlib.List.length(lst)) {
+    lst @ [item];
+  } else {
+    lst @ [item]; // Todo fix
+  };
+
+let find = (x, lst) =>
+  try(Some(__findExn(0, x, lst))) {
+  | _ => None
+  };
+
 module Make = (Config: ListConfig) => {
   open Config;
   type diff = t;
   type operation =
     | Append(t)
     | Prepend(t)
+    | InsertAt(int, t)
     | AddAfter(Util.id, t)
     | AddBefore(Util.id, t)
     | Remove(Util.id)
@@ -43,6 +67,7 @@ module Make = (Config: ListConfig) => {
     fun
     | Append(_t) => "Append"
     | Prepend(_t) => "Prepend"
+    | InsertAt(_, _) => "InsertAt"
     | AddAfter(_, _) => "AddAfter"
     | AddBefore(_, _) => "AddBefore"
     | Remove(_) => "Remove"
@@ -53,10 +78,10 @@ module Make = (Config: ListConfig) => {
   let internalId = "__internal__" |> Util.idOfString;
   let wrapper: ref(collection) = ref([]);
 
-  let getCollection = () => wrapper^;
+  let getSnapshot = () => wrapper^;
 
   let get = id =>
-    Stdlib.List.find(item => getId(item) === id, getCollection());
+    Stdlib.List.find(item => getId(item) === id, getSnapshot());
 
   let setData = updatedInternalData => {
     wrapper := updatedInternalData;
@@ -65,15 +90,20 @@ module Make = (Config: ListConfig) => {
   let handleOperation = (~handleUndo, data, op) => {
     switch (op) {
     | Remove(id) =>
-      let item = listFind(item => getId(item) === id, data);
-      switch (item, listRemove(item => getId(item) !== id, data)) {
-      | (Ok(i), Ok(_) as a) =>
-        handleUndo(Append(i)); // Todo put in correct place
+      let findRes = find(item => getId(item) === id, data);
+      switch (findRes, listRemove(item => getId(item) !== id, data)) {
+      | (Some((index, item)), Ok(_) as a) =>
+        handleUndo(InsertAt(index, item));
         a;
-      | (Error(_), Ok(_))
-      | (Ok(_), Error(_))
-      | (Error(_), Error(_)) => Error(Util.NotFound(op))
+      | (None, Ok(_))
+      | (Some(_), Error(_))
+      | (None, Error(_)) => Error(Util.NotFound(op))
       };
+    | InsertAt(index, t) =>
+      // TODO fix
+
+      handleUndo(Remove(t |> getId));
+      Ok(data @ [t]);
     | Append(t) =>
       handleUndo(Remove(t |> getId));
       Ok(data @ [t]);
@@ -160,7 +190,7 @@ module Make = (Config: ListConfig) => {
           | Error(s) => (collection, [s, ...errors])
           };
         },
-        (getCollection(), []),
+        (getSnapshot(), []),
         ops,
       )
       |> (
@@ -186,7 +216,7 @@ module Make = (Config: ListConfig) => {
 
   let apply = Undo.apply;
   let applyTransaction = ops => {
-    let prevCollection = getCollection();
+    let prevCollection = getSnapshot();
     switch (Undo.applyTransaction(ops)) {
     | Ok(data) as ok => ok
     | Error(_) as err =>
@@ -200,7 +230,7 @@ module Make = (Config: ListConfig) => {
   let redo = Undo.redo;
   let getRedoHistory = Undo.getRedoHistory;
 
-  let length = () => getCollection() |> Stdlib.List.length;
+  let length = () => getSnapshot() |> Stdlib.List.length;
   let __resetCollection__ = () => {
     wrapper := [];
     Undo.__reset__();
@@ -210,7 +240,7 @@ module Make = (Config: ListConfig) => {
   let printCollection = () => {
     print_newline();
     print_endline("List: ");
-    getCollection()
+    getSnapshot()
     |> Stdlib.List.mapi((i, item) =>
          (i |> string_of_int) ++ ": " ++ Config.print(item)
        )

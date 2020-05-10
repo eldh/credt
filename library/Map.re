@@ -33,8 +33,8 @@ module Make = (Config: Config) => {
   let internalData = IMap.empty;
   let wrapper = ref(internalData);
 
-  let getCollection = () => wrapper^;
-  let get = id => IMap.find(id, getCollection());
+  let getSnapshot = () => wrapper^;
+  let get = id => IMap.find(id, getSnapshot());
 
   let handleOperation = (~handleUndo, data, op) => {
     switch (op) {
@@ -77,7 +77,7 @@ module Make = (Config: Config) => {
         | Error(s) => (collection, [s, ...errors])
         };
       },
-      (getCollection(), []),
+      (getSnapshot(), []),
       ops,
     )
     |> (
@@ -93,7 +93,7 @@ module Make = (Config: Config) => {
   // let baseApply = (~handleUndo, updates) =>
   //   Stdlib.List.fold_left(
   //     handleOperation(~handleUndo),
-  //     getCollection(),
+  //     getSnapshot(),
   //     updates,
   //   )
   //   |> setMap;
@@ -119,11 +119,10 @@ module Make = (Config: Config) => {
     print_newline();
     print_newline();
     print_endline(
-      "Collection length:"
-      ++ (getCollection() |> IMap.cardinal |> string_of_int),
+      "Collection length:" ++ (getSnapshot() |> IMap.cardinal |> string_of_int),
     );
     print_endline("Items:");
-    getCollection() |> IMap.iter((_, item) => print(item) |> print_endline);
+    getSnapshot() |> IMap.iter((_, item) => print(item) |> print_endline);
   };
 
   let toList = m =>

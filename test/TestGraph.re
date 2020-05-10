@@ -194,9 +194,9 @@ module Graph = {
 
   let make =
       (
-        ~groups: Group.collection=Group.getCollection(),
-        ~posts: Post.collection=Post.getCollection(),
-        ~users: User.collection=User.getCollection(),
+        ~groups: Group.collection=Group.getSnapshot(),
+        ~posts: Post.collection=Post.getSnapshot(),
+        ~users: User.collection=User.getSnapshot(),
         (),
       ) => {
     {

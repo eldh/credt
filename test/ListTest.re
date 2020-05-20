@@ -1,7 +1,7 @@
 open TestFramework;
 module UserList = {
   type t = {
-    id: Rupp.Util.id,
+    id: Credt.Util.id,
     name: string,
     email: string,
     age: int,
@@ -12,13 +12,13 @@ module UserList = {
     | SetName(string)
     | SetAge(int);
 
-  include Rupp.List.Make({
+  include Credt.List.Make({
     type nonrec t = t;
     type nonrec update = update;
     let getId = u => u.id;
     let print = u =>
       "{\n  id: "
-      ++ (u.id |> Rupp.Util.stringOfId)
+      ++ (u.id |> Credt.Util.stringOfId)
       ++ ",\n  name: "
       ++ u.name
       ++ ",\n  email: "
@@ -36,7 +36,7 @@ module UserList = {
 open UserList;
 
 let makeUser = i => {
-  id: Rupp.Util.makeId(),
+  id: Credt.Util.makeId(),
   name: "Name" ++ (i |> string_of_int),
   email: "email@" ++ (i |> string_of_int),
   age: i * 2,
@@ -142,14 +142,14 @@ describe("List", t => {
 
   test("should handle multiple items", ({expect}) => {
     let me = {
-      id: Rupp.Util.makeId(),
+      id: Credt.Util.makeId(),
       name: "Andreas",
       email: "andreas@eldh.co",
       age: 35,
     };
 
     let miniMe = {
-      id: Rupp.Util.makeId(),
+      id: Credt.Util.makeId(),
       name: "Sixten",
       email: "sixten@eldh.co",
       age: 2,
@@ -173,14 +173,14 @@ describe("List", t => {
 
   test("should handle ok transaction", ({expect}) => {
     let me = {
-      id: Rupp.Util.makeId(),
+      id: Credt.Util.makeId(),
       name: "Andreas",
       email: "andreas@eldh.co",
       age: 35,
     };
 
     let miniMe = {
-      id: Rupp.Util.makeId(),
+      id: Credt.Util.makeId(),
       name: "Sixten",
       email: "sixten@eldh.co",
       age: 2,
@@ -206,14 +206,14 @@ describe("List", t => {
 
   test("should roll back transaction", ({expect}) => {
     let me = {
-      id: Rupp.Util.makeId(),
+      id: Credt.Util.makeId(),
       name: "Andreas",
       email: "andreas@eldh.co",
       age: 35,
     };
 
     let miniMe = {
-      id: Rupp.Util.makeId(),
+      id: Credt.Util.makeId(),
       name: "Sixten",
       email: "sixten@eldh.co",
       age: 2,
@@ -237,7 +237,7 @@ describe("List", t => {
 
   test("should handle undo & redo", ({expect}) => {
     let miniMe = {
-      id: Rupp.Util.makeId(),
+      id: Credt.Util.makeId(),
       name: "Sixten",
       email: "sixten@eldh.co",
       age: 2,
@@ -256,7 +256,7 @@ describe("List", t => {
     expect.result(
       applyRemoteOperations([
         Append({
-          id: Rupp.Util.makeId(),
+          id: Credt.Util.makeId(),
           name: "Alien",
           email: "alien@space.co",
           age: 21111111,

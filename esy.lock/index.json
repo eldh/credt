@@ -1,10 +1,10 @@
 {
   "checksum": "c63ca3ec42d647e5ab4826fea36690f9",
-  "root": "rupp@link-dev:./package.json",
+  "root": "credt@link-dev:./package.json",
   "node": {
-    "rupp@link-dev:./package.json": {
-      "id": "rupp@link-dev:./package.json",
-      "name": "rupp",
+    "credt@link-dev:./package.json": {
+      "id": "credt@link-dev:./package.json",
+      "name": "credt",
       "version": "link-dev:./package.json",
       "source": {
         "type": "link-dev",

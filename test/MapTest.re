@@ -1,7 +1,7 @@
 open TestFramework;
 module UserMap = {
   type t = {
-    id: Rupp.Util.id,
+    id: Credt.Util.id,
     name: string,
     email: string,
     age: int,
@@ -12,13 +12,13 @@ module UserMap = {
     | SetName(string)
     | SetAge(int);
 
-  include Rupp.Map.Make({
+  include Credt.Map.Make({
     type nonrec t = t;
     type nonrec update = update;
     let getId = u => u.id;
     let print = u =>
       "{\n  id: "
-      ++ (u.id |> Rupp.Util.stringOfId)
+      ++ (u.id |> Credt.Util.stringOfId)
       ++ ",\n  name: "
       ++ u.name
       ++ ",\n  email: "
@@ -35,7 +35,7 @@ module UserMap = {
   });
 };
 let makeUser = i => {
-  UserMap.id: Rupp.Util.makeId(),
+  UserMap.id: Credt.Util.makeId(),
   name: "Name" ++ (i |> string_of_int),
   email: "email@" ++ (i |> string_of_int),
   age: i * 2,
@@ -45,7 +45,7 @@ describe("Map", ({test, testOnly}) => {
   test("should update item", ({expect}) => {
     let me =
       UserMap.{
-        id: Rupp.Util.makeId(),
+        id: Credt.Util.makeId(),
         name: "Andreas",
         email: "andreas@eldh.co",
         age: 35,
@@ -75,7 +75,7 @@ describe("Map", ({test, testOnly}) => {
   test("should handle multiple items", ({expect}) => {
     let me =
       UserMap.{
-        id: Rupp.Util.makeId(),
+        id: Credt.Util.makeId(),
         name: "Andreas",
         email: "andreas@eldh.co",
         age: 35,
@@ -83,7 +83,7 @@ describe("Map", ({test, testOnly}) => {
 
     let miniMe =
       UserMap.{
-        id: Rupp.Util.makeId(),
+        id: Credt.Util.makeId(),
         name: "Sixten",
         email: "sixten@eldh.co",
         age: 2,
@@ -108,7 +108,7 @@ describe("Map", ({test, testOnly}) => {
   test("should handle undo & redo", ({expect}) => {
     let miniMe =
       UserMap.{
-        id: Rupp.Util.makeId(),
+        id: Credt.Util.makeId(),
         name: "Sixten",
         email: "sixten@eldh.co",
         age: 2,
@@ -129,7 +129,7 @@ describe("Map", ({test, testOnly}) => {
     expect.result(
       UserMap.applyRemoteOperations([
         Add({
-          id: Rupp.Util.makeId(),
+          id: Credt.Util.makeId(),
           name: "Alien",
           email: "alien@space.co",
           age: 21111111,

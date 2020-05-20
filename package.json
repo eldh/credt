@@ -1,28 +1,28 @@
 {
-  "name": "rupp",
+  "name": "credt",
   "version": "0.0.0",
-  "description": "My Project",
+  "description": "CRDT-like data structures in reasonml",
   "esy": {
-    "build": "dune build -p <PACKAGE_NAME>",
+    "build": "dune build -p credt",
     "buildDev": "pesy",
-    "release": { "releasedBinaries": [ "RuppApp.exe" ] }
+    "release": { "releasedBinaries": [ "CredtApp.exe" ] }
   },
   "buildDirs": {
     "test": {
-      "require": [ "rupp.lib", "rely.lib" ],
-      "main": "TestRupp",
-      "name": "TestRupp.exe"
+      "require": [ "credt.lib", "rely.lib" ],
+      "main": "TestCredt",
+      "name": "TestCredt.exe"
     },
-    "library": { "name": "rupp.lib", "namespace": "Rupp" },
+    "library": { "name": "credt.lib", "namespace": "Credt" },
     "executable": {
-      "require": [ "rupp.lib", "calendar" ],
-      "main": "RuppApp",
-      "name": "RuppApp.exe"
+      "require": [ "credt.lib", "calendar" ],
+      "main": "CredtApp",
+      "name": "CredtApp.exe"
     }
   },
   "scripts": {
     "pesy": "bash -c 'env PESY_MODE=update pesy'",
-    "test": "esy x TestRupp.exe",
+    "test": "esy x TestCredt.exe",
     "test-watch":
       "export TERM=xterm | fswatch -o ./test | xargs -n1 -I{} esy test"
   },

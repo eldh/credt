@@ -1,7 +1,7 @@
 open TestFramework;
 module User = {
   type t = {
-    id: Rupp.Util.id,
+    id: Credt.Util.id,
     name: string,
     email: string,
     age: int,
@@ -12,7 +12,7 @@ module User = {
     | SetName(string)
     | SetAge(int);
 
-  include Rupp.Util.RMap({
+  include Credt.Util.RMap({
     type nonrec t = t;
     type nonrec update = update;
     let getId = u => u.id;
@@ -27,17 +27,17 @@ module User = {
 
 module Post = {
   type t = {
-    id: Rupp.Util.id,
-    group: Rupp.Util.id,
-    author: Rupp.Util.id,
+    id: Credt.Util.id,
+    group: Credt.Util.id,
+    author: Credt.Util.id,
     content: string,
   };
 
   type update =
-    | SetAuthor(Rupp.Util.id)
+    | SetAuthor(Credt.Util.id)
     | SetContent(string);
 
-  include Rupp.Util.RMap({
+  include Credt.Util.RMap({
     type nonrec t = t;
     type nonrec update = update;
     let getId = u => u.id;
@@ -54,15 +54,15 @@ module Post = {
 
 module Group = {
   type t = {
-    id: Rupp.Util.id,
+    id: Credt.Util.id,
     name: string,
-    members: list(Rupp.Util.id),
+    members: list(Credt.Util.id),
   };
 
   type update =
     | SetName(string);
 
-  include Rupp.Util.RMap({
+  include Credt.Util.RMap({
     type nonrec t = t;
     type nonrec update = update;
     let print = u => u.name;
@@ -119,13 +119,13 @@ module Graph = {
     author: user,
     group,
     content: string,
-    id: Rupp.Util.id,
+    id: Credt.Util.id,
   }
   and group = {
     name: string,
     members: list(groupUser),
     posts: list(post),
-    id: Rupp.Util.id,
+    id: Credt.Util.id,
   }
   and user = {
     name: string,
@@ -133,13 +133,13 @@ module Graph = {
     age: int,
     groups: list(group),
     posts: list(post),
-    id: Rupp.Util.id,
+    id: Credt.Util.id,
   }
   and groupUser = {
     name: string,
     email: string,
     age: int,
-    id: Rupp.Util.id,
+    id: Credt.Util.id,
   };
 
   let rec makeUser = (~users, ~groups, ~posts, user: User.t) => {
@@ -216,7 +216,7 @@ describe("Graph", ({test}) => {
   test("should work", ({expect}) => {
     let me =
       User.{
-        id: Rupp.Util.makeId(),
+        id: Credt.Util.makeId(),
         name: "Andreas",
         email: "andreas@eldh.co",
         age: 35,
@@ -224,21 +224,21 @@ describe("Graph", ({test}) => {
 
     let miniMe =
       User.{
-        id: Rupp.Util.makeId(),
+        id: Credt.Util.makeId(),
         name: "Sixten",
         email: "sixten@eldh.co",
         age: 2,
       };
     let mom =
       User.{
-        id: Rupp.Util.makeId(),
+        id: Credt.Util.makeId(),
         name: "Linnéa",
         email: "linnea@wallen.co",
         age: 35,
       };
     let family =
       Group.{
-        id: Rupp.Util.makeId(),
+        id: Credt.Util.makeId(),
         name: "Eldhs",
         members: [miniMe.id, me.id, mom.id],
       };

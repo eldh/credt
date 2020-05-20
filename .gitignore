@@ -6,6 +6,6 @@ node_modules/
 _build
 _release
 _esy/
-rupp.install
+credt.install
 .DS_Store
 *.install

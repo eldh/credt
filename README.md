@@ -1,4 +1,5 @@
-# rupp
+# credt
+CRDT-ish data structures.
 
 ## Todo:
 
@@ -20,7 +21,7 @@ esy build
 After building the project, you can run the main binary that is produced.
 
 ```
-esy x RuppApp.exe
+esy x CredtApp.exe
 ```
 
 ## Running Tests:

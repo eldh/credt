@@ -1,22 +1,38 @@
 {
   "name": "credt",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "CRDT-like data structures in reasonml",
-  "files": ["library/*", "test/*"],
+  "files": [
+    "library/*",
+    "test/*"
+  ],
   "esy": {
     "build": "dune build -p credt",
     "buildDev": "pesy",
-    "release": { "releasedBinaries": [ "CredtApp.exe" ] }
+    "release": {
+      "releasedBinaries": [
+        "CredtApp.exe"
+      ]
+    }
   },
   "buildDirs": {
     "test": {
-      "require": [ "credt.lib", "rely.lib" ],
+      "require": [
+        "credt.lib",
+        "rely.lib"
+      ],
       "main": "TestCredt",
       "name": "TestCredt.exe"
     },
-    "library": { "name": "credt.lib", "namespace": "Credt" },
+    "library": {
+      "name": "credt.lib",
+      "namespace": "Credt"
+    },
     "executable": {
-      "require": [ "credt.lib", "calendar" ],
+      "require": [
+        "credt.lib",
+        "calendar"
+      ],
       "main": "CredtApp",
       "name": "CredtApp.exe"
     }
@@ -24,8 +40,7 @@
   "scripts": {
     "pesy": "bash -c 'env PESY_MODE=update pesy'",
     "test": "esy x TestCredt.exe",
-    "test-watch":
-      "export TERM=xterm | fswatch -o ./test | xargs -n1 -I{} esy test"
+    "test-watch": "export TERM=xterm | fswatch -o ./test | xargs -n1 -I{} esy test"
   },
   "dependencies": {
     "@esy-ocaml/reason": "*",

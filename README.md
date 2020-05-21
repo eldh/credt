@@ -1,11 +1,12 @@
 # credt
 CRDT-ish data structures.
 
-## Todo:
+### Map
 
-- Undo/redo
-- PPX....
-- Confilcts & validation
+
+### List
+
+
 
 ## Developing:
 

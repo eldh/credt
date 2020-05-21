@@ -2,6 +2,7 @@
   "name": "credt",
   "version": "0.0.0",
   "description": "CRDT-like data structures in reasonml",
+  "files": ["library/*", "test/*"],
   "esy": {
     "build": "dune build -p credt",
     "buildDev": "pesy",

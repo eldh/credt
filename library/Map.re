@@ -130,5 +130,5 @@ module Make = (Config: Config) => {
     m
     |> IMap.to_seq
     |> Stdlib.List.of_seq
-    |> Tablecloth.List.map(~f=((id, item: t)) => item);
+    |> Tablecloth.List.map(~f=((_id, item: t)) => item);
 };

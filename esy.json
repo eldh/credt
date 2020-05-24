@@ -1,0 +1,49 @@
+{
+  "name": "credt",
+  "version": "0.0.1",
+  "description": "CRDT-like data structures in reasonml",
+  "files": ["library/*", "test/*"],
+  "esy": {
+    "build": "dune build -p credt",
+    "buildDev": "pesy",
+    "release": {
+      "releasedBinaries": ["CredtApp.exe"]
+    }
+  },
+  "buildDirs": {
+    "test": {
+      "require": ["tablecloth-native", "credt.lib", "rely.lib"],
+      "main": "TestCredt",
+      "name": "TestCredt.exe"
+    },
+    "library": {
+      "require": ["tablecloth-native", "calendar"],
+      "name": "credt.lib",
+      "namespace": "Credt"
+    },
+    "executable": {
+      "require": ["tablecloth-native", "calendar", "credt.lib"],
+      "main": "CredtApp",
+      "name": "CredtApp.exe"
+    }
+  },
+  "scripts": {
+    "pesy": "bash -c 'env PESY_MODE=update pesy'",
+    "test": "esy x TestCredt.exe",
+    "test-watch": "export TERM=xterm | fswatch -o ./test | xargs -n1 -I{} esy test"
+  },
+  "dependencies": {
+    "@esy-ocaml/reason": "*",
+    "@opam/calendar": "2.04",
+    "@opam/dune": ">=1.6.0",
+    "@opam/tablecloth-native": "*",
+    "@reason-native/rely": "^3.2.1",
+    "ocaml": "^4.4.0"
+  },
+  "devDependencies": {
+    "ocaml": "4.7.1004",
+    "refmterr": "*",
+    "pesy": "*",
+    "@opam/merlin": "*"
+  }
+}

@@ -40,7 +40,7 @@ let rec __findExn = (index, fn, lst) =>
     }
   };
 
-let rec __insertAtExn = (index, item, currentIndex, lst) =>
+let __insertAtExn = (index, item, _currentIndex, lst) =>
   if (index >= Tablecloth.List.length(lst)) {
     lst @ [item];
   } else {
@@ -102,7 +102,7 @@ module Make = (Config: ListConfig) => {
       | (Some(_), Error(_))
       | (None, Error(_)) => Error(Util.NotFound(op))
       };
-    | InsertAt(index, t) =>
+    | InsertAt(_index, t) =>
       // TODO fix
 
       handleUndo(Remove(t |> getId));
@@ -173,7 +173,7 @@ module Make = (Config: ListConfig) => {
       | None => Error(Util.NotFound(op))
       };
     | Replace(id, t) =>
-      switch (Tablecloth.List.find(item => getId(item) === id, data)) {
+      switch (Tablecloth.List.find(~f=item => getId(item) === id, data)) {
       | Some(item) =>
         handleUndo(Replace(id, item));
         Ok(
@@ -225,7 +225,7 @@ module Make = (Config: ListConfig) => {
   let applyTransaction = ops => {
     let prevCollection = getSnapshot();
     switch (Undo.applyTransaction(ops)) {
-    | Ok(data) as ok => ok
+    | Ok(_data) as ok => ok
     | Error(_) as err =>
       setData(prevCollection);
       err;

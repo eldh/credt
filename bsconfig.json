@@ -1,0 +1,18 @@
+{
+  "name": "credt",
+  "namespace": false,
+  "bsc-flags": ["-bs-no-version-header", "-bs-super-errors"],
+  "sources": ["bs", "library"],
+  "suffix": ".bs.js",
+  "reason": {
+    "react-jsx": 3
+  },
+  "package-specs": [
+    {
+      "module": "es6",
+      "in-source": true
+    }
+  ],
+  "bs-dependencies": ["tablecloth-bucklescript"],
+  "refmt": 3
+}

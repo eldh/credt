@@ -7,6 +7,43 @@
     "test/*",
     "bs/*"
   ],
+  "esy": {
+    "build": "dune build -p credt",
+    "buildDev": "pesy",
+    "release": {
+      "releasedBinaries": [
+        "CredtApp.exe"
+      ]
+    }
+  },
+  "buildDirs": {
+    "test": {
+      "require": [
+        "tablecloth-native",
+        "credt.lib",
+        "rely.lib"
+      ],
+      "main": "TestCredt",
+      "name": "TestCredt.exe"
+    },
+    "library": {
+      "require": [
+        "tablecloth-native",
+        "calendar"
+      ],
+      "name": "credt.lib",
+      "namespace": "Credt"
+    },
+    "executable": {
+      "require": [
+        "tablecloth-native",
+        "calendar",
+        "credt.lib"
+      ],
+      "main": "CredtApp",
+      "name": "CredtApp.exe"
+    }
+  },
   "scripts": {},
   "dependencies": {
     "tablecloth-bucklescript": "darklang/tablecloth"

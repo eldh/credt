@@ -141,7 +141,7 @@ function Make(Config) {
   var toList = function (m) {
     return Tablecloth.List.map((function (param) {
                   return param[1];
-                }), Stdlib.List.of_seq(Curry._1(IMap.to_seq, m)));
+                }), Curry._1(IMap.to_seq, m));
   };
   return {
           IMap: IMap,

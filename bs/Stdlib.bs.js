@@ -81,13 +81,7 @@ var $$Map = {
   Make: Make
 };
 
-function of_seq(a) {
-  return a;
-}
-
-var List = {
-  of_seq: of_seq
-};
+var List = { };
 
 export {
   $$Map ,

@@ -18,6 +18,7 @@
   "buildDirs": {
     "test": {
       "require": [
+        "tablecloth-native",
         "credt.lib",
         "rely.lib"
       ],
@@ -25,13 +26,18 @@
       "name": "TestCredt.exe"
     },
     "library": {
+      "require": [
+        "tablecloth-native",
+        "calendar"
+      ],
       "name": "credt.lib",
       "namespace": "Credt"
     },
     "executable": {
       "require": [
-        "credt.lib",
-        "calendar"
+        "tablecloth-native",
+        "calendar",
+        "credt.lib"
       ],
       "main": "CredtApp",
       "name": "CredtApp.exe"
@@ -46,6 +52,7 @@
     "@esy-ocaml/reason": "*",
     "@opam/calendar": "2.04",
     "@opam/dune": ">=1.6.0",
+    "@opam/tablecloth-native": "*",
     "@reason-native/rely": "^3.2.1",
     "ocaml": "^4.4.0"
   },

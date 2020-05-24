@@ -1,4 +1,5 @@
 exception NotImplemented;
+
 module type ListConfig = {
   type t;
   type update;
@@ -10,20 +11,21 @@ module type ListConfig = {
 let listRemove = (fn, list) => {
   let foundItem = ref(false);
   let newList =
-    Stdlib.List.filter(
-      item => {
-        let res = fn(item);
-        if (!res) {
-          foundItem := true;
-        };
-        res;
-      },
+    Tablecloth.List.filter(
+      ~f=
+        item => {
+          let res = fn(item);
+          if (!res) {
+            foundItem := true;
+          };
+          res;
+        },
       list,
     );
   foundItem^ ? Ok(newList) : Error(`NotFound);
 };
 let listFind = (fn, data) =>
-  try(Ok(Stdlib.List.find(fn, data))) {
+  try(Ok(Tablecloth.List.find(~f=fn, data))) {
   | Not_found => Error(`NotFound)
   };
 
@@ -39,7 +41,7 @@ let rec __findExn = (index, fn, lst) =>
   };
 
 let rec __insertAtExn = (index, item, currentIndex, lst) =>
-  if (index >= Stdlib.List.length(lst)) {
+  if (index >= Tablecloth.List.length(lst)) {
     lst @ [item];
   } else {
     lst @ [item]; // Todo fix
@@ -81,7 +83,8 @@ module Make = (Config: ListConfig) => {
   let getSnapshot = () => wrapper^;
 
   let get = id =>
-    Stdlib.List.find(item => getId(item) === id, getSnapshot());
+    Tablecloth.List.find(~f=item => getId(item) === id, getSnapshot())
+    |> Tablecloth.Option.getExn; // TODO return result instead
 
   let setData = updatedInternalData => {
     wrapper := updatedInternalData;
@@ -115,17 +118,18 @@ module Make = (Config: ListConfig) => {
       handleUndo(Remove(newItemId));
       let foundItem = ref(false);
       let res =
-        Stdlib.List.fold_right(
-          (item, newList) => {
-            item |> getId === id
-              ? {
-                foundItem := true;
-                [t, item, ...newList];
-              }
-              : [item, ...newList]
-          },
+        Tablecloth.List.foldRight(
+          ~f=
+            (item, newList) => {
+              item |> getId === id
+                ? {
+                  foundItem := true;
+                  [t, item, ...newList];
+                }
+                : [item, ...newList]
+            },
+          ~initial=[],
           data,
-          [],
         );
       foundItem^ ? Ok(res) : Error(Util.NotFound(op));
     | AddAfter(id, t) =>
@@ -133,34 +137,35 @@ module Make = (Config: ListConfig) => {
       handleUndo(Remove(newItemId));
       let foundItem = ref(false);
       let res =
-        Stdlib.List.fold_right(
-          (item, newList) => {
-            item |> getId === id
-              ? {
-                foundItem := true;
-                [item, t, ...newList];
-              }
-              : [item, ...newList]
-          },
+        Tablecloth.List.foldRight(
+          ~f=
+            (item, newList) => {
+              item |> getId === id
+                ? {
+                  foundItem := true;
+                  [item, t, ...newList];
+                }
+                : [item, ...newList]
+            },
+          ~initial=[],
           data,
-          [],
         );
       foundItem^ ? Ok(res) : Error(Util.NotFound(op));
     | Update(id, update) =>
       let (l, undo) =
-        data
-        |> Stdlib.List.fold_left(
-             ((l, undoOp), item) => {
-               item |> getId === id
-                 ? {
-                   let (newData, undo) = reducer(item, update);
-
-                   ([newData, ...l], Some(undo));
-                 }
-                 : ([item, ...l], undoOp)
-             },
-             ([], None),
-           );
+        Tablecloth.List.foldLeft(
+          ~f=
+            (item, (l, undoOp)) => {
+              item |> getId === id
+                ? {
+                  let (newData, undo) = reducer(item, update);
+                  ([newData, ...l], Some(undo));
+                }
+                : ([item, ...l], undoOp)
+            },
+          ~initial=([], None),
+          data,
+        );
       switch (undo) {
       | Some(undo) =>
         handleUndo(Update(id, undo));
@@ -168,11 +173,12 @@ module Make = (Config: ListConfig) => {
       | None => Error(Util.NotFound(op))
       };
     | Replace(id, t) =>
-      switch (Stdlib.List.find_opt(item => getId(item) === id, data)) {
+      switch (Tablecloth.List.find(item => getId(item) === id, data)) {
       | Some(item) =>
         handleUndo(Replace(id, item));
         Ok(
-          data |> Stdlib.List.map(item => {item |> getId === id ? t : item}),
+          data
+          |> Tablecloth.List.map(~f=item => {item |> getId === id ? t : item}),
         );
       | None => Error(Util.NotFound(op))
       }
@@ -182,15 +188,16 @@ module Make = (Config: ListConfig) => {
     (~handleUndo: operation => unit, list(operation)) =>
     result(unit, list(Util.operationError(operation))) =
     (~handleUndo, ops) =>
-      Stdlib.List.fold_left(
-        ((collection, errors), op) => {
-          let res = handleOperation(~handleUndo, collection, op);
-          switch (res) {
-          | Ok(d) => (d, errors)
-          | Error(s) => (collection, [s, ...errors])
-          };
-        },
-        (getSnapshot(), []),
+      Tablecloth.List.foldLeft(
+        ~f=
+          (op, (collection, errors)) => {
+            let res = handleOperation(~handleUndo, collection, op);
+            switch (res) {
+            | Ok(d) => (d, errors)
+            | Error(s) => (collection, [s, ...errors])
+            };
+          },
+        ~initial=(getSnapshot(), []),
         ops,
       )
       |> (
@@ -230,7 +237,7 @@ module Make = (Config: ListConfig) => {
   let redo = Undo.redo;
   let getRedoHistory = Undo.getRedoHistory;
 
-  let length = () => getSnapshot() |> Stdlib.List.length;
+  let length = () => getSnapshot() |> Tablecloth.List.length;
   let __resetCollection__ = () => {
     wrapper := [];
     Undo.__reset__();
@@ -241,9 +248,9 @@ module Make = (Config: ListConfig) => {
     print_newline();
     print_endline("List: ");
     getSnapshot()
-    |> Stdlib.List.mapi((i, item) =>
+    |> Tablecloth.List.mapi(~f=(i, item) =>
          (i |> string_of_int) ++ ": " ++ Config.print(item)
        )
-    |> Stdlib.List.iter(print_endline);
+    |> Tablecloth.List.iter(~f=print_endline);
   };
 };

@@ -7,5 +7,5 @@
    (name TestCredt)  ;  From package.json main field
    ; The name of the executable (runnable via esy x TestCredt.exe) 
    (public_name TestCredt.exe)  ;  From package.json name field
-   (libraries  credt.lib rely.lib ) ;  From package.json require field (array of strings)
+   (libraries  tablecloth-native credt.lib rely.lib ) ;  From package.json require field (array of strings)
 )

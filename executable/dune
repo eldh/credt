@@ -7,5 +7,5 @@
    (name CredtApp)  ;  From package.json main field
    ; The name of the executable (runnable via esy x CredtApp.exe) 
    (public_name CredtApp.exe)  ;  From package.json name field
-   (libraries  credt.lib calendar ) ;  From package.json require field (array of strings)
+   (libraries  tablecloth-native calendar credt.lib ) ;  From package.json require field (array of strings)
 )

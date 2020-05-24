@@ -69,15 +69,16 @@ module Make = (Config: Config) => {
    * Apply a list of operations
    */
   let baseApply = (~handleUndo, ops) =>
-    Stdlib.List.fold_left(
-      ((collection, errors), op) => {
-        let res = handleOperation(~handleUndo, collection, op);
-        switch (res) {
-        | Ok(d) => (d, errors)
-        | Error(s) => (collection, [s, ...errors])
-        };
-      },
-      (getSnapshot(), []),
+    Tablecloth.List.foldLeft(
+      ~f=
+        (op, (collection, errors)) => {
+          let res = handleOperation(~handleUndo, collection, op);
+          switch (res) {
+          | Ok(d) => (d, errors)
+          | Error(s) => (collection, [s, ...errors])
+          };
+        },
+      ~initial=(getSnapshot(), []),
       ops,
     )
     |> (
@@ -91,7 +92,7 @@ module Make = (Config: Config) => {
     );
 
   // let baseApply = (~handleUndo, updates) =>
-  //   Stdlib.List.fold_left(
+  //   Tablecloth.List.fold_left(
   //     handleOperation(~handleUndo),
   //     getSnapshot(),
   //     updates,
@@ -129,5 +130,5 @@ module Make = (Config: Config) => {
     m
     |> IMap.to_seq
     |> Stdlib.List.of_seq
-    |> Stdlib.List.map(((id, item: t)) => item);
+    |> Tablecloth.List.map(~f=((id, item: t)) => item);
 };

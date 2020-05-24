@@ -7,4 +7,5 @@
    (name Credt)
    ; Other libraries list this name in their package.json 'require' field to use this library.
    (public_name credt.lib)
+   (libraries  tablecloth-native calendar )
 )

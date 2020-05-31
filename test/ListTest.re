@@ -166,9 +166,9 @@ describe("List", t => {
     ).
       toBeOk();
 
-    expect.equal(get(miniMe.id).name, "Sixten Eldh");
-    expect.equal(get(me.id).email, "a@eldh.co");
-    expect.equal(get(miniMe.id).age, 2);
+    expect.equal(getExn(miniMe.id).name, "Sixten Eldh");
+    expect.equal(getExn(me.id).email, "a@eldh.co");
+    expect.equal(getExn(miniMe.id).age, 2);
   });
 
   test("should handle ok transaction", ({expect}) => {
@@ -197,9 +197,9 @@ describe("List", t => {
     ).
       toBeOk();
 
-    expect.equal(get(miniMe.id).name, "Sixten Eldh");
-    expect.equal(get(me.id).email, "a@eldh.co");
-    expect.equal(get(miniMe.id).age, 2);
+    expect.equal(getExn(miniMe.id).name, "Sixten Eldh");
+    expect.equal(getExn(me.id).email, "a@eldh.co");
+    expect.equal(getExn(miniMe.id).age, 2);
     expect.equal(getUndoHistory() |> Stdlib.List.length, 1);
     expect.equal(getRedoHistory() |> Stdlib.List.length, 0);
   });
@@ -246,7 +246,7 @@ describe("List", t => {
       [Append(miniMe), Update(miniMe.id, SetName("Sixten Eldh"))] |> apply,
     ).
       toBeOk();
-    expect.equal(get(miniMe.id).name, "Sixten Eldh");
+    expect.equal(getExn(miniMe.id).name, "Sixten Eldh");
 
     // Undo queue
     let previousUndoLength = getUndoHistory() |> Stdlib.List.length;
@@ -270,11 +270,11 @@ describe("List", t => {
     expect.equal(newUndoLength, getUndoHistory() |> Stdlib.List.length);
 
     // But values should update
-    expect.equal(get(miniMe.id).name, "Sxtn");
+    expect.equal(getExn(miniMe.id).name, "Sxtn");
 
     // Redo still works, acts as a new update
     expect.result(redo()).toBeOk();
-    expect.equal(get(miniMe.id).name, "Sixten Eldh");
-    expect.equal(get(miniMe.id).age, 2);
+    expect.equal(getExn(miniMe.id).name, "Sixten Eldh");
+    expect.equal(getExn(miniMe.id).age, 2);
   });
 });

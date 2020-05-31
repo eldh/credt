@@ -84,7 +84,10 @@ module Make = (Config: ListConfig) => {
 
   let get = id =>
     Tablecloth.List.find(~f=item => getId(item) === id, getSnapshot())
-    |> Tablecloth.Option.getExn; // TODO return result instead
+    |> Tablecloth.Result.fromOption(~error="Item not found");
+
+  let getExn = id =>
+    id |> get |> Tablecloth.Result.toOption |> Tablecloth.Option.getExn;
 
   let setData = updatedInternalData => {
     wrapper := updatedInternalData;

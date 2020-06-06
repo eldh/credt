@@ -92,7 +92,7 @@ include Credt.List.Make({
 
 #### Modifying data
 
-To make changes to the list we just defined, we apply operations on it. For example, adding a user looks like this
+To make changes to the list we just defined, we apply operations on it. For example, adding a user looks like this:
 
 ```
 let myUser = { ... };
@@ -108,7 +108,7 @@ let result = UserList.apply([Update(myUser.id, SetName("Maggie Simpson"))]);
 
 `Append` and `Update` are variants that belong to `Credt.List`, and `SetName` is the variant we defined in our update type.
 
-The result of an `apply` call is a `result(unit, list(failedOperations))`, so if some operations failed you can inform the user. This can happen if some other client had removed the record you tried to update for example.
+The result of an `apply` call is a `result(unit, list(failedOperations))`, so if some operations failed you can inform the user. This can happen if some other client had removed the record you tried to update for example, or if you yourself batched incompatible updates.
 
 ## Developing:
 
@@ -117,14 +117,6 @@ npm install -g esy
 git clone <this-repo>
 esy install
 esy build
-```
-
-## Running Binary:
-
-After building the project, you can run the main binary that is produced.
-
-```
-esy x CredtApp.exe
 ```
 
 ## Running Tests:

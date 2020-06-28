@@ -3,6 +3,9 @@ exception NotImplemented;
 module type ListConfig = {
   type t;
   type update;
+  // let manager:Manager.t;
+  // module type ManagerType = Manager.ManagerConfig;
+  let moduleId: Util.id;
   let getId: t => Util.id;
   let print: t => string;
   let reducer: (t, update) => (t, update);
@@ -55,6 +58,8 @@ let find = (x, lst) =>
 module Make = (Config: ListConfig) => {
   open Config;
   type diff = t;
+
+  /* List operations */
   type operation =
     | Append(t)
     | Prepend(t)
@@ -67,8 +72,8 @@ module Make = (Config: ListConfig) => {
 
   let string_of_operation =
     fun
-    | Append(_t) => "Append"
-    | Prepend(_t) => "Prepend"
+    | Append(_) => "Append"
+    | Prepend(_) => "Prepend"
     | InsertAt(_, _) => "InsertAt"
     | AddAfter(_, _) => "AddAfter"
     | AddBefore(_, _) => "AddBefore"
@@ -216,18 +221,24 @@ module Make = (Config: ListConfig) => {
   /**
    * Apply operations that should not be part of the undo/redo handling
    * */
-  let applyRemoteOperations = baseApply(~handleUndo=ignore);
+  let applyRemoteOperations =
+    Manager.apply(moduleId, baseApply(~handleUndo=ignore));
 
-  module Undo =
-    UndoRedo.Make({
-      type nonrec operation = operation;
-      let apply = baseApply;
-    });
-
-  let apply = Undo.apply;
+  let apply =
+    Manager.apply(
+      moduleId,
+      baseApply(~handleUndo=Manager.handleUndo(moduleId)),
+    );
   let applyTransaction = ops => {
     let prevCollection = getSnapshot();
-    switch (Undo.applyTransaction(ops)) {
+    switch (
+      //TODO fix
+      Manager.applyTransaction(
+        moduleId,
+        baseApply(~handleUndo=ignore),
+        ops,
+      )
+    ) {
     | Ok(_data) as ok => ok
     | Error(_) as err =>
       setData(prevCollection);
@@ -235,15 +246,9 @@ module Make = (Config: ListConfig) => {
     };
   };
 
-  let undo = Undo.undo;
-  let getUndoHistory = Undo.getUndoHistory;
-  let redo = Undo.redo;
-  let getRedoHistory = Undo.getRedoHistory;
-
   let length = () => getSnapshot() |> Tablecloth.List.length;
   let __resetCollection__ = () => {
     wrapper := [];
-    Undo.__reset__();
   };
 
   let print = Config.print;

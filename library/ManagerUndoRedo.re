@@ -1,18 +1,21 @@
 exception NotImplemented;
-
+// let ignore2 = (_, _) => ();
 // TODO Perhaps handle cases where undo/redo cannot be applied in a better way. Now we just pop from the list and return the apply error.
 module Make =
        (
          C: {
            type operation;
            let apply:
-             (~handleUndo: operation => unit, list(operation)) =>
-             result(unit, list(Util.operationError(operation)));
+             (
+               ~handleUndo: ((Util.id, operation)) => unit,
+               list((Util.id, operation))
+             ) =>
+             result(unit, list((Util.id, Util.operationError(operation))));
          },
        ) => {
   type undoOperation =
-    | Op(C.operation)
-    | Transaction(list(C.operation));
+    | Op((Util.id, C.operation))
+    | Transaction(list((Util.id, C.operation)));
 
   let undoHistory: ref(list(undoOperation)) = ref([]);
   let redoHistory: ref(list(undoOperation)) = ref([]);
@@ -20,12 +23,12 @@ module Make =
   let getUndoHistory = () => undoHistory^;
   let getRedoHistory = () => redoHistory^;
 
-  let addUndo = op => {
-    undoHistory := [Op(op)] @ undoHistory^;
+  let addUndo = ((id, op)) => {
+    undoHistory := [Op((id, op))] @ undoHistory^;
   };
 
-  let addRedo = op => {
-    redoHistory := [Op(op)] @ redoHistory^;
+  let addRedo = ((id, op)) => {
+    redoHistory := [Op((id, op))] @ redoHistory^;
   };
 
   let addUndoTransaction = ops => {
@@ -56,9 +59,9 @@ module Make =
       undoHistory := rest;
       addRedoTransaction(ops);
       ops |> C.apply(~handleUndo=ignore);
-    | [Op(op), ...rest] =>
+    | [Op((id, op)), ...rest] =>
       undoHistory := rest;
-      [op] |> C.apply(~handleUndo=addRedo);
+      [(id, op)] |> C.apply(~handleUndo=addRedo);
     };
   };
 
@@ -69,9 +72,9 @@ module Make =
       redoHistory := rest;
       addUndoTransaction(ops);
       ops |> C.apply(~handleUndo=ignore);
-    | [Op(op), ...rest] =>
+    | [Op((id, op)), ...rest] =>
       redoHistory := rest;
-      [op] |> C.apply(~handleUndo=addUndo);
+      [(id, op)] |> C.apply(~handleUndo=addUndo);
     };
   };
 

@@ -214,8 +214,11 @@ module Make = (Config: ListConfig) => {
   /**
    * Apply operations that should not be part of the undo/redo handling
    * */
+
   let applyRemoteOperations = baseApply(~handleUndo=ignore);
+
   Manager.register(moduleId, baseApply);
+
   let apply = ops => Manager.apply(moduleId, ops);
   let applyTransaction = ops => {
     let prevCollection = getSnapshot();

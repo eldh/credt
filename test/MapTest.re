@@ -15,6 +15,7 @@ module UserMap = {
   include Credt.Map.Make({
     type nonrec t = t;
     type nonrec update = update;
+    let moduleId = "UserMap" |> Credt.Util.idOfString;
     let getId = u => u.id;
     let print = u =>
       "{\n  id: "
@@ -121,9 +122,10 @@ describe("Map", ({test, testOnly}) => {
     expect.equal(UserMap.get(miniMe.id).name, "Sixten Eldh");
 
     // Undo queue
-    let previousUndoLength = UserMap.getUndoHistory() |> Stdlib.List.length;
-    expect.result(UserMap.undo()).toBeOk();
-    let newUndoLength = UserMap.getUndoHistory() |> Stdlib.List.length;
+    let previousUndoLength =
+      Credt.Manager.getUndoHistory() |> Stdlib.List.length;
+    expect.result(Credt.Manager.undo()).toBeOk();
+    let newUndoLength = Credt.Manager.getUndoHistory() |> Stdlib.List.length;
     expect.equal(newUndoLength, previousUndoLength - 1);
 
     expect.result(
@@ -142,14 +144,14 @@ describe("Map", ({test, testOnly}) => {
     // Remote operations should not affect undo queue
     expect.equal(
       newUndoLength,
-      UserMap.getUndoHistory() |> Stdlib.List.length,
+      Credt.Manager.getUndoHistory() |> Stdlib.List.length,
     );
 
     // But values should update
     expect.equal(UserMap.get(miniMe.id).name, "Sxtn");
 
     // Redo still works, acts as a new update
-    expect.result(UserMap.redo()).toBeOk();
+    expect.result(Credt.Manager.redo()).toBeOk();
     expect.equal(UserMap.get(miniMe.id).name, "Sixten Eldh");
     expect.equal(UserMap.get(miniMe.id).age, 2);
   });

@@ -46,12 +46,10 @@ module Undo =
   });
 
 let apply = (id: Util.id, ops) => {
-  print_endline("id" ++ (id |> Util.stringOfId));
   Undo.apply(ops |> Tablecloth.List.map(~f=op => (id, op |> toOp)));
 };
 
 let applyTransaction = (id: Util.id, ops) => {
-  print_endline("id" ++ (id |> Util.stringOfId));
   Undo.applyTransaction(
     ops |> Tablecloth.List.map(~f=op => (id, op |> toOp)),
   );

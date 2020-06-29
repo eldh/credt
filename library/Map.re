@@ -2,6 +2,7 @@ exception NotImplemented;
 module type Config = {
   type t;
   type update;
+  let moduleId: Util.id;
   let getId: t => Util.id;
   let print: t => string;
   let reducer: (t, update) => (t, update);
@@ -91,30 +92,13 @@ module Make = (Config: Config) => {
       }
     );
 
-  // let baseApply = (~handleUndo, updates) =>
-  //   Tablecloth.List.fold_left(
-  //     handleOperation(~handleUndo),
-  //     getSnapshot(),
-  //     updates,
-  //   )
-  //   |> setMap;
+  Manager.register(moduleId, baseApply);
 
   /* Apply operations that should not be part of the undo/redo handling */
   let applyRemoteOperations = baseApply(~handleUndo=ignore);
 
-  module Undo =
-    UndoRedo.Make({
-      type nonrec operation = operation;
-      let apply = baseApply;
-    });
-
-  let apply = Undo.apply;
-  let applyTransaction = Undo.applyTransaction;
-
-  let undo = Undo.undo;
-  let getUndoHistory = Undo.getUndoHistory;
-  let redo = Undo.redo;
-  let getRedoHistory = Undo.getRedoHistory;
+  let apply = ops => Manager.apply(moduleId, ops);
+  let applyTransaction = ops => Manager.applyTransaction(moduleId, ops);
 
   let printCollection = () => {
     print_newline();

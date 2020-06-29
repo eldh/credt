@@ -3,8 +3,6 @@ exception NotImplemented;
 module type ListConfig = {
   type t;
   type update;
-  // let manager:Manager.t;
-  // module type ManagerType = Manager.ManagerConfig;
   let moduleId: Util.id;
   let getId: t => Util.id;
   let print: t => string;
@@ -58,8 +56,6 @@ let find = (x, lst) =>
 module Make = (Config: ListConfig) => {
   open Config;
   type diff = t;
-
-  /* List operations */
   type operation =
     | Append(t)
     | Prepend(t)
@@ -72,8 +68,8 @@ module Make = (Config: ListConfig) => {
 
   let string_of_operation =
     fun
-    | Append(_) => "Append"
-    | Prepend(_) => "Prepend"
+    | Append(_t) => "Append"
+    | Prepend(_t) => "Prepend"
     | InsertAt(_, _) => "InsertAt"
     | AddAfter(_, _) => "AddAfter"
     | AddBefore(_, _) => "AddBefore"
@@ -192,53 +188,38 @@ module Make = (Config: ListConfig) => {
       }
     };
   };
-  let baseApply:
-    (~handleUndo: operation => unit, list(operation)) =>
-    result(unit, list(Util.operationError(operation))) =
-    (~handleUndo, ops) =>
-      Tablecloth.List.foldLeft(
-        ~f=
-          (op, (collection, errors)) => {
-            let res = handleOperation(~handleUndo, collection, op);
-            switch (res) {
-            | Ok(d) => (d, errors)
-            | Error(s) => (collection, [s, ...errors])
-            };
-          },
-        ~initial=(getSnapshot(), []),
-        ops,
-      )
-      |> (
-        ((list, errors)) => {
-          setData(list);
-          switch (errors) {
-          | [] => Ok()
-          | s => Error(s)
+  let baseApply = (~handleUndo, ops) =>
+    Tablecloth.List.foldLeft(
+      ~f=
+        (op, (collection, errors)) => {
+          let res = handleOperation(~handleUndo, collection, op);
+          switch (res) {
+          | Ok(d) => (d, errors)
+          | Error(s) => (collection, [s, ...errors])
           };
-        }
-      );
+        },
+      ~initial=(getSnapshot(), []),
+      ops,
+    )
+    |> (
+      ((list, errors)) => {
+        setData(list);
+        switch (errors) {
+        | [] => Ok()
+        | s => Error(s)
+        };
+      }
+    );
 
   /**
    * Apply operations that should not be part of the undo/redo handling
    * */
-  let applyRemoteOperations =
-    Manager.apply(moduleId, baseApply(~handleUndo=ignore));
-
-  let apply =
-    Manager.apply(
-      moduleId,
-      baseApply(~handleUndo=Manager.handleUndo(moduleId)),
-    );
+  let applyRemoteOperations = baseApply(~handleUndo=ignore);
+  Manager.register(moduleId, baseApply);
+  let apply = ops => Manager.apply(moduleId, ops);
   let applyTransaction = ops => {
     let prevCollection = getSnapshot();
-    switch (
-      //TODO fix
-      Manager.applyTransaction(
-        moduleId,
-        baseApply(~handleUndo=ignore),
-        ops,
-      )
-    ) {
+    switch (Manager.applyTransaction(moduleId, ops)) {
     | Ok(_data) as ok => ok
     | Error(_) as err =>
       setData(prevCollection);

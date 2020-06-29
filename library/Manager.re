@@ -8,19 +8,15 @@ type apply =
 
 let applyFns: ref(list((Util.id, apply))) = ref([]);
 let register = (id, apply) => {
-  applyFns := [(id, apply), ...applyFns^];
+  applyFns := [(id, apply |> Obj.magic), ...applyFns^];
 };
-let getApplyFn = inputId =>
-  applyFns^
-  |> Stdlib.List.find(((id, _)) => id === inputId)
-  |> (((_, apply)) => apply);
 
 let mapError = fn =>
   fun
   | Ok(_) as a => a
   | Error(err) => fn(err);
+
 let baseApply = (~handleUndo, ops: list(undoOperation)) => {
-  // TODO Maybe find all ops with same if and apply in one call
   applyFns^
   |> Tablecloth.List.map(~f=((id, fn)) => {
        ops
@@ -33,7 +29,6 @@ let baseApply = (~handleUndo, ops: list(undoOperation)) => {
           )
      })
   |> Tablecloth.List.fold_left(~initial=Ok(), ~f=(res, memo) => {
-       //TODO Merge errors,
        switch (memo, res) {
        | (Ok (), Ok ()) => Ok()
        | (Error(errs) as e, Ok ())
@@ -42,10 +37,6 @@ let baseApply = (~handleUndo, ops: list(undoOperation)) => {
          Error(Stdlib.List.concat([memoErrs, errs]))
        }
      });
-       // |> Stdlib.List.concat;
-};
-let handleUndo = ((id, op)) => {
-  []; // TODO FIX
 };
 
 module Undo =
@@ -54,18 +45,20 @@ module Undo =
     let apply = baseApply;
   });
 
-let apply = (id: Util.id, applyFn) => {
-  // TODO FIX
+let apply = (id: Util.id, ops) => {
   print_endline("id" ++ (id |> Util.stringOfId));
-  ops => {
-    Undo.apply(ops);
-  };
+  Undo.apply(ops |> Tablecloth.List.map(~f=op => (id, op |> toOp)));
 };
 
-let applyTransaction = (id: Util.id, applyTransactionFn) => {
-  // TODO FIX
+let applyTransaction = (id: Util.id, ops) => {
   print_endline("id" ++ (id |> Util.stringOfId));
-  ops => {
-    Undo.applyTransaction(ops);
-  };
+  Undo.applyTransaction(
+    ops |> Tablecloth.List.map(~f=op => (id, op |> toOp)),
+  );
 };
+
+let undo = Undo.undo;
+let getUndoHistory = Undo.getUndoHistory;
+let redo = Undo.redo;
+let getRedoHistory = Undo.getRedoHistory;
+let __reset__ = Undo.__reset__;

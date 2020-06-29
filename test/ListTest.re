@@ -16,6 +16,7 @@ module UserList = {
     type nonrec t = t;
     type nonrec update = update;
     let getId = u => u.id;
+    let moduleId = "UserList" |> Credt.Util.idOfString;
     let print = u =>
       "{\n  id: "
       ++ (u.id |> Credt.Util.stringOfId)
@@ -52,7 +53,10 @@ let {describe, describeSkip, describeOnly} =
        testLifecycle
        |> beforeAll(() => ())
        |> afterAll(() => ())
-       |> beforeEach(() => {UserList.__resetCollection__()})
+       |> beforeEach(() => {
+            Credt.Manager.__reset__();
+            UserList.__resetCollection__();
+          })
        |> afterEach(() => ())
      )
   |> build;
@@ -166,7 +170,7 @@ describe("List", t => {
     let removeOp = [UserList.Remove(unluckyUser.id)];
 
     expect.result(removeOp |> UserList.apply).toBeOk();
-    expect.result(UserList.undo()).toBeOk();
+    expect.result(Credt.Manager.undo()).toBeOk();
     expect.equal(
       unluckyUser.id,
       Stdlib.List.nth(UserList.getSnapshot(), 3).id,
@@ -233,8 +237,8 @@ describe("List", t => {
     expect.equal(UserList.getExn(miniMe.id).name, "Sixten Eldh");
     expect.equal(UserList.getExn(me.id).email, "a@eldh.co");
     expect.equal(UserList.getExn(miniMe.id).age, 2);
-    expect.equal(UserList.getUndoHistory() |> Stdlib.List.length, 1);
-    expect.equal(UserList.getRedoHistory() |> Stdlib.List.length, 0);
+    expect.equal(Credt.Manager.getUndoHistory() |> Stdlib.List.length, 1);
+    expect.equal(Credt.Manager.getRedoHistory() |> Stdlib.List.length, 0);
   });
 
   test("should roll back transaction", ({expect}) => {
@@ -264,8 +268,8 @@ describe("List", t => {
     ).
       toBeError();
     expect.equal(UserList.getSnapshot() |> Stdlib.List.length, 0);
-    expect.equal(UserList.getUndoHistory() |> Stdlib.List.length, 0);
-    expect.equal(UserList.getRedoHistory() |> Stdlib.List.length, 0);
+    expect.equal(Credt.Manager.getUndoHistory() |> Stdlib.List.length, 0);
+    expect.equal(Credt.Manager.getRedoHistory() |> Stdlib.List.length, 0);
   });
 
   test("should handle undo & redo", ({expect}) => {
@@ -283,9 +287,10 @@ describe("List", t => {
     expect.equal(UserList.getExn(miniMe.id).name, "Sixten Eldh");
 
     // Undo queue
-    let previousUndoLength = UserList.getUndoHistory() |> Stdlib.List.length;
-    expect.result(UserList.undo()).toBeOk();
-    let newUndoLength = UserList.getUndoHistory() |> Stdlib.List.length;
+    let previousUndoLength =
+      Credt.Manager.getUndoHistory() |> Stdlib.List.length;
+    expect.result(Credt.Manager.undo()).toBeOk();
+    let newUndoLength = Credt.Manager.getUndoHistory() |> Stdlib.List.length;
     expect.equal(newUndoLength, previousUndoLength - 1);
     expect.result(
       UserList.applyRemoteOperations([
@@ -303,14 +308,14 @@ describe("List", t => {
     // Remote operations should not affect undo queue
     expect.equal(
       newUndoLength,
-      UserList.getUndoHistory() |> Stdlib.List.length,
+      Credt.Manager.getUndoHistory() |> Stdlib.List.length,
     );
 
     // But values should update
     expect.equal(UserList.getExn(miniMe.id).name, "Sxtn");
 
     // Redo still works, acts as a new update
-    expect.result(UserList.redo()).toBeOk();
+    expect.result(Credt.Manager.redo()).toBeOk();
     expect.equal(UserList.getExn(miniMe.id).name, "Sixten Eldh");
     expect.equal(UserList.getExn(miniMe.id).age, 2);
   });

@@ -3,7 +3,7 @@
 import * as Util from "./Util.bs.js";
 import * as Block from "bs-platform/lib/es6/block.js";
 import * as Curry from "bs-platform/lib/es6/curry.js";
-import * as UndoRedo from "./UndoRedo.bs.js";
+import * as Manager from "./Manager.bs.js";
 import * as Pervasives from "bs-platform/lib/es6/pervasives.js";
 import * as Tablecloth from "tablecloth-bucklescript/bucklescript/src/tablecloth.bs.js";
 import * as Caml_option from "bs-platform/lib/es6/caml_option.js";
@@ -115,9 +115,12 @@ function Make(Config) {
     return wrapper.contents;
   };
   var get = function (id) {
-    return Tablecloth.$$Option.getExn(Tablecloth.List.find((function (item) {
+    return Tablecloth.Result.fromOption("Item not found", Tablecloth.List.find((function (item) {
                       return Curry._1(Config.getId, item) === id;
                     }), wrapper.contents));
+  };
+  var getExn = function (id) {
+    return Tablecloth.$$Option.getExn(Tablecloth.Result.toOption(get(id)));
   };
   var setData = function (updatedInternalData) {
     wrapper.contents = updatedInternalData;
@@ -325,12 +328,13 @@ function Make(Config) {
                   return /* () */0;
                 }), param);
   };
-  var Undo = UndoRedo.Make({
-        apply: baseApply
-      });
+  Manager.register(Config.moduleId, baseApply);
+  var apply = function (ops) {
+    return Manager.apply(Config.moduleId, ops);
+  };
   var applyTransaction = function (ops) {
     var prevCollection = wrapper.contents;
-    var ok = Curry._1(Undo.applyTransaction, ops);
+    var ok = Manager.applyTransaction(Config.moduleId, ops);
     if (ok.tag) {
       wrapper.contents = prevCollection;
       return ok;
@@ -343,7 +347,7 @@ function Make(Config) {
   };
   var __resetCollection__ = function (param) {
     wrapper.contents = /* [] */0;
-    return Curry._1(Undo.__reset__, /* () */0);
+    return /* () */0;
   };
   var printCollection = function (param) {
     Pervasives.print_newline(/* () */0);
@@ -361,17 +365,13 @@ function Make(Config) {
           wrapper: wrapper,
           getSnapshot: getSnapshot,
           get: get,
+          getExn: getExn,
           setData: setData,
           handleOperation: handleOperation,
           baseApply: baseApply,
           applyRemoteOperations: applyRemoteOperations,
-          Undo: Undo,
-          apply: Undo.apply,
+          apply: apply,
           applyTransaction: applyTransaction,
-          undo: Undo.undo,
-          getUndoHistory: Undo.getUndoHistory,
-          redo: Undo.redo,
-          getRedoHistory: Undo.getRedoHistory,
           length: length,
           __resetCollection__: __resetCollection__,
           print: Config.print,
@@ -389,4 +389,4 @@ export {
   Make ,
   
 }
-/* UndoRedo Not a pure module */
+/* Manager Not a pure module */

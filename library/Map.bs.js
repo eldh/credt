@@ -4,8 +4,8 @@ import * as Util from "./Util.bs.js";
 import * as Block from "bs-platform/lib/es6/block.js";
 import * as Curry from "bs-platform/lib/es6/curry.js";
 import * as Stdlib from "../bs/Stdlib.bs.js";
+import * as Manager from "./Manager.bs.js";
 import * as Caml_obj from "bs-platform/lib/es6/caml_obj.js";
-import * as UndoRedo from "./UndoRedo.bs.js";
 import * as Pervasives from "bs-platform/lib/es6/pervasives.js";
 import * as Tablecloth from "tablecloth-bucklescript/bucklescript/src/tablecloth.bs.js";
 import * as Caml_exceptions from "bs-platform/lib/es6/caml_exceptions.js";
@@ -120,14 +120,18 @@ function Make(Config) {
       return /* Ok */Block.__(0, [/* () */0]);
     }
   };
+  Manager.register(Config.moduleId, baseApply);
   var applyRemoteOperations = function (param) {
     return baseApply((function (prim) {
                   return /* () */0;
                 }), param);
   };
-  var Undo = UndoRedo.Make({
-        apply: baseApply
-      });
+  var apply = function (ops) {
+    return Manager.apply(Config.moduleId, ops);
+  };
+  var applyTransaction = function (ops) {
+    return Manager.applyTransaction(Config.moduleId, ops);
+  };
   var printCollection = function (param) {
     Pervasives.print_newline(/* () */0);
     Pervasives.print_newline(/* () */0);
@@ -156,13 +160,8 @@ function Make(Config) {
           setMap: setMap,
           baseApply: baseApply,
           applyRemoteOperations: applyRemoteOperations,
-          Undo: Undo,
-          apply: Undo.apply,
-          applyTransaction: Undo.applyTransaction,
-          undo: Undo.undo,
-          getUndoHistory: Undo.getUndoHistory,
-          redo: Undo.redo,
-          getRedoHistory: Undo.getRedoHistory,
+          apply: apply,
+          applyTransaction: applyTransaction,
           printCollection: printCollection,
           toList: toList
         };
@@ -173,4 +172,4 @@ export {
   Make ,
   
 }
-/* UndoRedo Not a pure module */
+/* Manager Not a pure module */

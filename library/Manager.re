@@ -31,16 +31,16 @@ let baseApply = (~handleUndo, ops: list(undoOperation)) => {
   |> Tablecloth.List.fold_left(~initial=Ok(), ~f=(res, memo) => {
        switch (memo, res) {
        | (Ok (), Ok ()) => Ok()
-       | (Error(errs) as e, Ok ())
-       | (Ok (), Error(errs) as e) => e
+       | (Error(_) as e, Ok ())
+       | (Ok (), Error(_) as e) => e
        | (Error(memoErrs), Error(errs)) =>
-         Error(Stdlib.List.concat([memoErrs, errs]))
+         Error(Tablecloth.List.concat([memoErrs, errs]))
        }
      });
 };
 
 module Undo =
-  ManagerUndoRedo.Make({
+  UndoRedo.Make({
     type operation = op;
     let apply = baseApply;
   });

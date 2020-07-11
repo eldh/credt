@@ -1,5 +1,3 @@
-let now = () => 0.; // TODO obviously
-
 type operationError('a) =
   | NotFound('a);
 

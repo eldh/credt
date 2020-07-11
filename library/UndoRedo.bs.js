@@ -21,16 +21,22 @@ function Make(C) {
   var getRedoHistory = function (param) {
     return redoHistory.contents;
   };
-  var addUndo = function (op) {
+  var addUndo = function (param) {
     undoHistory.contents = Pervasives.$at(/* :: */[
-          /* Op */Block.__(0, [op]),
+          /* Op */Block.__(0, [/* tuple */[
+                param[0],
+                param[1]
+              ]]),
           /* [] */0
         ], undoHistory.contents);
     return /* () */0;
   };
-  var addRedo = function (op) {
+  var addRedo = function (param) {
     redoHistory.contents = Pervasives.$at(/* :: */[
-          /* Op */Block.__(0, [op]),
+          /* Op */Block.__(0, [/* tuple */[
+                param[0],
+                param[1]
+              ]]),
           /* [] */0
         ], redoHistory.contents);
     return /* () */0;
@@ -75,9 +81,13 @@ function Make(C) {
                       return /* () */0;
                     }), ops);
       } else {
+        var match$2 = match$1[0];
         undoHistory.contents = match[1];
         return Curry._2(C.apply, addRedo, /* :: */[
-                    match$1[0],
+                    /* tuple */[
+                      match$2[0],
+                      match$2[1]
+                    ],
                     /* [] */0
                   ]);
       }
@@ -97,9 +107,13 @@ function Make(C) {
                       return /* () */0;
                     }), ops);
       } else {
+        var match$2 = match$1[0];
         redoHistory.contents = match[1];
         return Curry._2(C.apply, addUndo, /* :: */[
-                    match$1[0],
+                    /* tuple */[
+                      match$2[0],
+                      match$2[1]
+                    ],
                     /* [] */0
                   ]);
       }

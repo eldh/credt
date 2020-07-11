@@ -1,10 +1,6 @@
 
 
 
-function now(param) {
-  return 0;
-}
-
 var lastId = {
   contents: 0
 };
@@ -24,7 +20,6 @@ function makeId(param) {
 }
 
 export {
-  now ,
   lastId ,
   idOfString ,
   stringOfId ,

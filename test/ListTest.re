@@ -34,7 +34,6 @@ module UserList = {
       | SetAge(age) => ({...user, age}, SetAge(user.age));
   });
 };
-// open UserList;
 
 let makeUser = i => {
   UserList.id: Credt.Util.makeId(),
@@ -44,8 +43,6 @@ let makeUser = i => {
 };
 
 let userStdList = Stdlib.List.init(10, makeUser);
-
-// let myUserList = UserList.init();
 
 let {describe, describeSkip, describeOnly} =
   describeConfig

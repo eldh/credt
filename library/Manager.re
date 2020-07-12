@@ -1,6 +1,5 @@
 type op;
 let toOp: 'a => op = Obj.magic;
-let fromOp: op => 'a = Obj.magic;
 type undoOperation = (Util.id, op);
 type apply =
   (~handleUndo: op => unit, list(op)) =>
@@ -47,6 +46,33 @@ module Undo =
 
 let apply = (id: Util.id, ops) => {
   Undo.apply(ops |> Tablecloth.List.map(~f=op => (id, op |> toOp)));
+};
+
+let transaction: ref(list(undoOperation)) = ref([]);
+let transactionRollbacks: ref(list(unit => unit)) = ref([]);
+
+let addToTransaction = (id, ops, rollback) => {
+  transaction :=
+    Tablecloth.List.concat([
+      transaction^,
+      ops |> Tablecloth.List.map(~f=op => (id, op |> toOp)),
+    ]);
+  transactionRollbacks := [rollback, ...transactionRollbacks^];
+};
+
+let commitTransaction = () => {
+  switch (Undo.applyTransaction(transaction^)) {
+  | Ok () =>
+    transactionRollbacks := [];
+    transaction := [];
+    Ok();
+  | Error(_) as e =>
+    transactionRollbacks^
+    |> Tablecloth.List.iter(~f=rollbackFn => rollbackFn());
+    transactionRollbacks := [];
+    transaction := [];
+    e;
+  };
 };
 
 let applyTransaction = (id: Util.id, ops) => {

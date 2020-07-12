@@ -15,14 +15,18 @@ module Make = (Config: Config) => {
       type t = Util.id;
       let compare = Pervasives.compare;
     });
-  let mapRemove = (id, data) =>
-    try(Ok(IMap.remove(id, data))) {
-    | Not_found => Error(`NotFound)
+  let mapRemove = (id, data) => {
+    switch (IMap.find_opt(id, data)) {
+    | Some(_) => Ok(IMap.remove(id, data))
+    | None => Error(`NotFound)
     };
-  let mapFind = (id, data) =>
-    try(Ok(IMap.find(id, data))) {
-    | Not_found => Error(`NotFound)
+  };
+  let mapFind = (id, data) => {
+    switch (IMap.find_opt(id, data)) {
+    | Some(a) => Ok(a)
+    | None => Error(`NotFound)
     };
+  };
 
   type operation =
     | Add(t)
@@ -98,8 +102,10 @@ module Make = (Config: Config) => {
   let applyRemoteOperations = baseApply(~handleUndo=ignore);
 
   let apply = ops => Manager.apply(moduleId, ops);
-  let applyTransaction = ops => Manager.applyTransaction(moduleId, ops);
-
+  let addToTransaction = ops => {
+    let prevCollection = getSnapshot();
+    Manager.addToTransaction(moduleId, ops, () => {setMap(prevCollection)});
+  };
   let printCollection = () => {
     print_newline();
     print_newline();
@@ -108,6 +114,10 @@ module Make = (Config: Config) => {
     );
     print_endline("Items:");
     getSnapshot() |> IMap.iter((_, item) => print(item) |> print_endline);
+  };
+
+  let __resetCollection__ = () => {
+    wrapper := IMap.empty;
   };
 
   let toList = m =>

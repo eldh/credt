@@ -41,6 +41,19 @@ let makeUser = i => {
   email: "email@" ++ (i |> string_of_int),
   age: i * 2,
 };
+let {describe, describeSkip, describeOnly} =
+  describeConfig
+  |> withLifecycle(testLifecycle =>
+       testLifecycle
+       |> beforeAll(() => ())
+       |> afterAll(() => ())
+       |> beforeEach(() => {
+            Credt.Manager.__reset__();
+            UserMap.__resetCollection__();
+          })
+       |> afterEach(() => ())
+     )
+  |> build;
 
 describe("Map", ({test, testOnly}) => {
   test("should update item", ({expect}) => {
@@ -104,6 +117,33 @@ describe("Map", ({test, testOnly}) => {
     expect.equal(UserMap.get(miniMe.id).name, "Sixten Eldh");
     expect.equal(UserMap.get(me.id).email, "a@eldh.co");
     expect.equal(UserMap.get(miniMe.id).age, 2);
+  });
+
+  test("should handle ok transaction", ({expect}) => {
+    let user1 = makeUser(1);
+    let user2 = makeUser(2);
+    UserMap.([Add(user1), Add(user2)] |> addToTransaction);
+    expect.result(Credt.Manager.commitTransaction()).toBeOk();
+    expect.equal(user1.name, UserMap.get(user1.id).name);
+    expect.equal(user2.name, UserMap.get(user2.id).name);
+  });
+
+  test("should handle error transaction", ({expect}) => {
+    let user1 = makeUser(1);
+    let user2 = makeUser(2);
+    let user3 = makeUser(3);
+    UserMap.(
+      [Add(user1), Add(user2), Remove(user3.id)] |> addToTransaction
+    );
+    expect.result(Credt.Manager.commitTransaction()).toBeError();
+    expect.equal(
+      UserMap.(getSnapshot() |> toList |> Tablecloth.List.length),
+      0,
+    );
+  });
+  test("should return error when removing non-existing record", ({expect}) => {
+    let user3 = makeUser(3);
+    expect.result(UserMap.([Remove(user3.id)] |> apply)).toBeError();
   });
 
   test("should handle undo & redo", ({expect}) => {

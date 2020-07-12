@@ -10,6 +10,10 @@ Credt makes it easier to build interactive, distributed apps.
 - In cases where there are conflicts, they are automatically resolved.
 - Undo/redo is built-in.
 
+### What do you mean CRDT-_ish_?
+
+Credt is similar to operation-based CRDT:s, but it suports some operations that can result in conflicts. The handling of those conflicts is however automatic, so even if an operation failed (for example when attempting to update a record that had been deleted), the result should "make sense" to he user.
+
 ## How does it work?
 
 Credt is built on top of native data structures. But they don't have any functions that let's you operate on them. Instead, to modify your data you _apply operations_ on it. Operations are serializable, undoable and atomic.
@@ -91,10 +95,10 @@ include Credt.List.Make({
   // A function to get the uniqueid from a record
   let getId = u => u.id;
 
-  // A unique id for the module itself
+  // A unique id for the module itself.
   let moduleId = "UserList" |> Credt.Util.idOfString;
 
-  // the reducer we defined above
+  // The reducer we defined above
   let reducer = reducer;
 });
 ```
@@ -123,9 +127,40 @@ The result of an `apply` call is a `result(unit, list(failedOperations))`, so if
 
 `UserList.getSnapshot()` will return the current content of `UserList`, and `UserList.get(id)` will return a specific item. To use this in an app, you'd probably listen to updates and use `getSnapshot()` to pass data into your app.
 
+### Manager
+
+An app will likely consist of a numer of different credt data structures. Some things, like undo/redo and transactions, are inherently global concerns, which is why credt has a "manager".
+
+### Transactions
+
+Transactions ensure that dependant operations are handled as one when it comes to undo/redo and that none of the changes are applied if one operation fails.
+
+Consider for example an app where you have a list of issues and a map of labels. If you want to remove a label you have to remove it from the label map, and also remove the reference from all issues that have that label applied.
+
+Some psuedo code of how this would be done with Credt:
+
+```reason
+// Add all operations removing the label from issues
+IssueList.(
+  issues
+    |> List.keep(issueHasLabel(labelId))
+    |> List.map(issue => Update(RemoveLabel(labelId), issue))
+    |> addToTransaction
+);
+
+// Remove the label from the collection of labels
+LabelMap.(
+  [Remove(labelId)] |> addToTransaction
+);
+
+// Apply the transaction
+let result = Credt.Manager.applyTransaction() // OK()
+
+```
+
 ### Undo & redo
 
-Credt has global undo & redo functionality built it. Just call `Credt.Manager.undo()` to revert the latest operation. `Credt.Manager.redo()` will redo the last operation that was undone (if any).
+Credt has global undo & redo functionality built in. Just call `Credt.Manager.undo()` to revert the latest operation. `Credt.Manager.redo()` will redo the last operation that was undone (if any).
 
 ## Developing:
 

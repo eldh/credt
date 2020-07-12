@@ -220,17 +220,14 @@ describe("List", t => {
       age: 2,
     };
 
-    expect.result(
-      [
-        UserList.Append(me),
-        Update(me.id, SetEmail("a@eldh.co")),
-        UserList.Append(miniMe),
-        Update(miniMe.id, SetName("Sixten Eldh")),
-      ]
-      |> UserList.applyTransaction,
-    ).
-      toBeOk();
-
+    [
+      UserList.Append(me),
+      Update(me.id, SetEmail("a@eldh.co")),
+      UserList.Append(miniMe),
+      Update(miniMe.id, SetName("Sixten Eldh")),
+    ]
+    |> UserList.addToTransaction;
+    expect.result(Credt.Manager.commitTransaction()).toBeOk();
     expect.equal(UserList.getExn(miniMe.id).name, "Sixten Eldh");
     expect.equal(UserList.getExn(me.id).email, "a@eldh.co");
     expect.equal(UserList.getExn(miniMe.id).age, 2);
@@ -253,17 +250,15 @@ describe("List", t => {
       age: 2,
     };
 
-    expect.result(
-      [
-        UserList.Append(me),
-        Remove(me.id),
-        Update(me.id, SetEmail("a@eldh.co")),
-        UserList.Append(miniMe),
-        Update(miniMe.id, SetName("Sixten Eldh")),
-      ]
-      |> UserList.applyTransaction,
-    ).
-      toBeError();
+    [
+      UserList.Append(me),
+      Remove(me.id),
+      Update(me.id, SetEmail("a@eldh.co")),
+      UserList.Append(miniMe),
+      Update(miniMe.id, SetName("Sixten Eldh")),
+    ]
+    |> UserList.addToTransaction;
+    expect.result(Credt.Manager.commitTransaction()).toBeError();
     expect.equal(UserList.getSnapshot() |> Stdlib.List.length, 0);
     expect.equal(Credt.Manager.getUndoHistory() |> Stdlib.List.length, 0);
     expect.equal(Credt.Manager.getRedoHistory() |> Stdlib.List.length, 0);

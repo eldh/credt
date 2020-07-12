@@ -220,15 +220,18 @@ module Make = (Config: ListConfig) => {
   Manager.register(moduleId, baseApply);
 
   let apply = ops => Manager.apply(moduleId, ops);
-  let applyTransaction = ops => {
+  let addToTransaction = ops => {
     let prevCollection = getSnapshot();
-    switch (Manager.applyTransaction(moduleId, ops)) {
-    | Ok(_data) as ok => ok
-    | Error(_) as err =>
-      setData(prevCollection);
-      err;
-    };
+    Manager.addToTransaction(moduleId, ops, () => {setData(prevCollection)});
   };
+  // let applyTransaction = ops => {
+  //   switch (Manager.applyTransaction(moduleId, ops)) {
+  //   | Ok(_data) as ok => ok
+  //   | Error(_) as err =>
+  //     setData(prevCollection);
+  //     err;
+  //   };
+  // };
 
   let length = () => getSnapshot() |> Tablecloth.List.length;
   let __resetCollection__ = () => {

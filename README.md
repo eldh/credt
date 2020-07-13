@@ -173,6 +173,8 @@ esy build
 
 ## Running Tests:
 
+Tests currently only run against the native build.
+
 ```bash
 # Runs the "test" command in `package.json`.
 esy test

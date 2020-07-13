@@ -13,7 +13,7 @@ let register = (id, apply) => {
 let mapError = fn =>
   fun
   | Ok(_) as a => a
-  | Error(err) => fn(err);
+  | Error(err) => Error(fn(err));
 
 let baseApply = (~handleUndo, ops: list(undoOperation)) => {
   applyFns^
@@ -23,9 +23,7 @@ let baseApply = (~handleUndo, ops: list(undoOperation)) => {
             id === opId ? Some(op) : None
           )
        |> fn(~handleUndo=op => handleUndo((id, op)))
-       |> mapError(errs =>
-            Error(errs |> Tablecloth.List.map(~f=err => (id, err)))
-          )
+       |> mapError(Tablecloth.List.map(~f=err => (id, err)))
      })
   |> Tablecloth.List.fold_left(~initial=Ok(), ~f=(res, memo) => {
        switch (memo, res) {
@@ -67,8 +65,7 @@ let commitTransaction = () => {
     transaction := [];
     Ok();
   | Error(_) as e =>
-    transactionRollbacks^
-    |> Tablecloth.List.iter(~f=rollbackFn => rollbackFn());
+    transactionRollbacks^ |> Tablecloth.List.iter(~f=f => f());
     transactionRollbacks := [];
     transaction := [];
     e;

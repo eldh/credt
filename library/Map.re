@@ -4,7 +4,6 @@ module type Config = {
   type update;
   let moduleId: Util.id;
   let getId: t => Util.id;
-  let print: t => string;
   let reducer: (t, update) => (t, update);
 };
 
@@ -105,15 +104,6 @@ module Make = (Config: Config) => {
   let addToTransaction = ops => {
     let prevCollection = getSnapshot();
     Manager.addToTransaction(moduleId, ops, () => {setMap(prevCollection)});
-  };
-  let printCollection = () => {
-    print_newline();
-    print_newline();
-    print_endline(
-      "Collection length:" ++ (getSnapshot() |> IMap.cardinal |> string_of_int),
-    );
-    print_endline("Items:");
-    getSnapshot() |> IMap.iter((_, item) => print(item) |> print_endline);
   };
 
   let __resetCollection__ = () => {

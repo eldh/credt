@@ -5,7 +5,6 @@ module type ListConfig = {
   type update;
   let moduleId: Util.id;
   let getId: t => Util.id;
-  let print: t => string;
   let reducer: (t, update) => (t, update);
 };
 
@@ -236,16 +235,5 @@ module Make = (Config: ListConfig) => {
   let length = () => getSnapshot() |> Tablecloth.List.length;
   let __resetCollection__ = () => {
     wrapper := [];
-  };
-
-  let print = Config.print;
-  let printCollection = () => {
-    print_newline();
-    print_endline("List: ");
-    getSnapshot()
-    |> Tablecloth.List.mapi(~f=(i, item) =>
-         (i |> string_of_int) ++ ": " ++ Config.print(item)
-       )
-    |> Tablecloth.List.iter(~f=print_endline);
   };
 };

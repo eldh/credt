@@ -15,6 +15,9 @@ function Make(C) {
   var find = function (id, data) {
     return Belt_MapString.getExn(data, id);
   };
+  var find_opt = function (id, data) {
+    return Belt_MapString.get(data, id);
+  };
   return {
           isEmpty: Belt_MapString.isEmpty,
           has: Belt_MapString.has,
@@ -73,7 +76,8 @@ function Make(C) {
           remove: remove,
           iter: iter,
           to_seq: Belt_MapString.toList,
-          find: find
+          find: find,
+          find_opt: find_opt
         };
 }
 

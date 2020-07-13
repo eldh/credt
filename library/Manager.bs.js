@@ -10,10 +10,6 @@ function toOp(prim) {
   return prim;
 }
 
-function fromOp(prim) {
-  return prim;
-}
-
 var applyFns = {
   contents: /* [] */0
 };
@@ -31,7 +27,7 @@ function register(id, apply) {
 
 function mapError(fn, a) {
   if (a.tag) {
-    return Curry._1(fn, a[0]);
+    return /* Error */Block.__(1, [Curry._1(fn, a[0])]);
   } else {
     return a;
   }
@@ -58,13 +54,13 @@ function baseApply(handleUndo, ops) {
                 }
               }), /* Ok */Block.__(0, [/* () */0]), Tablecloth.List.map((function (param) {
                     var id = param[0];
-                    return mapError((function (errs) {
-                                  return /* Error */Block.__(1, [Tablecloth.List.map((function (err) {
-                                                    return /* tuple */[
-                                                            id,
-                                                            err
-                                                          ];
-                                                  }), errs)]);
+                    return mapError((function (param) {
+                                  return Tablecloth.List.map((function (err) {
+                                                return /* tuple */[
+                                                        id,
+                                                        err
+                                                      ];
+                                              }), param);
                                 }), Curry._2(param[1], (function (op) {
                                       return Curry._1(handleUndo, /* tuple */[
                                                   id,
@@ -92,6 +88,50 @@ function apply(id, ops) {
                   }), ops));
 }
 
+var transaction = {
+  contents: /* [] */0
+};
+
+var transactionRollbacks = {
+  contents: /* [] */0
+};
+
+function addToTransaction(id, ops, rollback) {
+  transaction.contents = Tablecloth.List.concat(/* :: */[
+        transaction.contents,
+        /* :: */[
+          Tablecloth.List.map((function (op) {
+                  return /* tuple */[
+                          id,
+                          op
+                        ];
+                }), ops),
+          /* [] */0
+        ]
+      ]);
+  transactionRollbacks.contents = /* :: */[
+    rollback,
+    transactionRollbacks.contents
+  ];
+  return /* () */0;
+}
+
+function commitTransaction(param) {
+  var e = Curry._1(Undo.applyTransaction, transaction.contents);
+  if (e.tag) {
+    Tablecloth.List.iter((function (f) {
+            return Curry._1(f, /* () */0);
+          }), transactionRollbacks.contents);
+    transactionRollbacks.contents = /* [] */0;
+    transaction.contents = /* [] */0;
+    return e;
+  } else {
+    transactionRollbacks.contents = /* [] */0;
+    transaction.contents = /* [] */0;
+    return /* Ok */Block.__(0, [/* () */0]);
+  }
+}
+
 function applyTransaction(id, ops) {
   return Curry._1(Undo.applyTransaction, Tablecloth.List.map((function (op) {
                     return /* tuple */[
@@ -113,13 +153,16 @@ var __reset__ = Undo.__reset__;
 
 export {
   toOp ,
-  fromOp ,
   applyFns ,
   register ,
   mapError ,
   baseApply ,
   Undo ,
   apply ,
+  transaction ,
+  transactionRollbacks ,
+  addToTransaction ,
+  commitTransaction ,
   applyTransaction ,
   undo ,
   getUndoHistory ,

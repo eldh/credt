@@ -17,17 +17,6 @@ module UserMap = {
     type nonrec update = update;
     let moduleId = "UserMap" |> Credt.Util.idOfString;
     let getId = u => u.id;
-    let print = u =>
-      "{\n  id: "
-      ++ (u.id |> Credt.Util.stringOfId)
-      ++ ",\n  name: "
-      ++ u.name
-      ++ ",\n  email: "
-      ++ u.email
-      ++ ",\n  age: "
-      ++ (u.age |> string_of_int)
-      ++ "\n}";
-
     let reducer = user =>
       fun
       | SetEmail(email) => ({...user, email}, SetEmail(user.email))

@@ -6,10 +6,9 @@ import * as Curry from "bs-platform/lib/es6/curry.js";
 import * as Stdlib from "../bs/Stdlib.bs.js";
 import * as Manager from "./Manager.bs.js";
 import * as Caml_obj from "bs-platform/lib/es6/caml_obj.js";
-import * as Pervasives from "bs-platform/lib/es6/pervasives.js";
 import * as Tablecloth from "tablecloth-bucklescript/bucklescript/src/tablecloth.bs.js";
+import * as Caml_option from "bs-platform/lib/es6/caml_option.js";
 import * as Caml_exceptions from "bs-platform/lib/es6/caml_exceptions.js";
-import * as Caml_builtin_exceptions from "bs-platform/lib/es6/caml_builtin_exceptions.js";
 
 var NotImplemented = Caml_exceptions.create("Map.NotImplemented");
 
@@ -19,27 +18,19 @@ function Make(Config) {
         compare: compare
       });
   var mapRemove = function (id, data) {
-    try {
+    var match = Curry._2(IMap.find_opt, id, data);
+    if (match !== undefined) {
       return /* Ok */Block.__(0, [Curry._2(IMap.remove, id, data)]);
-    }
-    catch (exn){
-      if (exn === Caml_builtin_exceptions.not_found) {
-        return /* Error */Block.__(1, [/* NotFound */-296251313]);
-      } else {
-        throw exn;
-      }
+    } else {
+      return /* Error */Block.__(1, [/* NotFound */-296251313]);
     }
   };
   var mapFind = function (id, data) {
-    try {
-      return /* Ok */Block.__(0, [Curry._2(IMap.find, id, data)]);
-    }
-    catch (exn){
-      if (exn === Caml_builtin_exceptions.not_found) {
-        return /* Error */Block.__(1, [/* NotFound */-296251313]);
-      } else {
-        throw exn;
-      }
+    var match = Curry._2(IMap.find_opt, id, data);
+    if (match !== undefined) {
+      return /* Ok */Block.__(0, [Caml_option.valFromOption(match)]);
+    } else {
+      return /* Error */Block.__(1, [/* NotFound */-296251313]);
     }
   };
   var internalId = Util.idOfString("__internal__");
@@ -129,18 +120,16 @@ function Make(Config) {
   var apply = function (ops) {
     return Manager.apply(Config.moduleId, ops);
   };
-  var applyTransaction = function (ops) {
-    return Manager.applyTransaction(Config.moduleId, ops);
-  };
-  var printCollection = function (param) {
-    Pervasives.print_newline(/* () */0);
-    Pervasives.print_newline(/* () */0);
-    console.log("Collection length:" + String(Curry._1(IMap.cardinal, wrapper.contents)));
-    console.log("Items:");
-    return Curry._2(IMap.iter, (function (param, item) {
-                  console.log(Curry._1(Config.print, item));
+  var addToTransaction = function (ops) {
+    var prevCollection = wrapper.contents;
+    return Manager.addToTransaction(Config.moduleId, ops, (function (param) {
+                  wrapper.contents = prevCollection;
                   return /* () */0;
-                }), wrapper.contents);
+                }));
+  };
+  var __resetCollection__ = function (param) {
+    wrapper.contents = IMap.empty;
+    return /* () */0;
   };
   var toList = function (m) {
     return Tablecloth.List.map((function (param) {
@@ -161,8 +150,8 @@ function Make(Config) {
           baseApply: baseApply,
           applyRemoteOperations: applyRemoteOperations,
           apply: apply,
-          applyTransaction: applyTransaction,
-          printCollection: printCollection,
+          addToTransaction: addToTransaction,
+          __resetCollection__: __resetCollection__,
           toList: toList
         };
 }

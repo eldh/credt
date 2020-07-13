@@ -30,6 +30,7 @@ module Map = {
     let to_seq = Belt_MapString.toList;
 
     let find = (id, data) => Belt_MapString.getExn(data, id |> stringOfId);
+    let find_opt = (id, data) => Belt_MapString.get(data, id |> stringOfId);
   };
 };
 

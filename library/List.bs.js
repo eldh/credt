@@ -332,15 +332,12 @@ function Make(Config) {
   var apply = function (ops) {
     return Manager.apply(Config.moduleId, ops);
   };
-  var applyTransaction = function (ops) {
+  var addToTransaction = function (ops) {
     var prevCollection = wrapper.contents;
-    var ok = Manager.applyTransaction(Config.moduleId, ops);
-    if (ok.tag) {
-      wrapper.contents = prevCollection;
-      return ok;
-    } else {
-      return ok;
-    }
+    return Manager.addToTransaction(Config.moduleId, ops, (function (param) {
+                  wrapper.contents = prevCollection;
+                  return /* () */0;
+                }));
   };
   var length = function (param) {
     return Tablecloth.List.length(wrapper.contents);
@@ -348,16 +345,6 @@ function Make(Config) {
   var __resetCollection__ = function (param) {
     wrapper.contents = /* [] */0;
     return /* () */0;
-  };
-  var printCollection = function (param) {
-    Pervasives.print_newline(/* () */0);
-    console.log("List: ");
-    return Tablecloth.List.iter((function (prim) {
-                  console.log(prim);
-                  return /* () */0;
-                }), Tablecloth.List.mapi((function (i, item) {
-                      return String(i) + (": " + Curry._1(Config.print, item));
-                    }), wrapper.contents));
   };
   return {
           string_of_operation: string_of_operation,
@@ -371,11 +358,9 @@ function Make(Config) {
           baseApply: baseApply,
           applyRemoteOperations: applyRemoteOperations,
           apply: apply,
-          applyTransaction: applyTransaction,
+          addToTransaction: addToTransaction,
           length: length,
-          __resetCollection__: __resetCollection__,
-          print: Config.print,
-          printCollection: printCollection
+          __resetCollection__: __resetCollection__
         };
 }
 

@@ -93,6 +93,23 @@ module Make = (Config: ListConfig) => {
     wrapper := updatedInternalData;
   };
 
+  type changeListener = list(operation) => unit;
+  let changeListeners: ref(list(changeListener)) = ref([]);
+
+  let addChangeListener = fn => {
+    changeListeners := [fn, ...changeListeners^];
+  };
+
+  let removeChangeListener = fn => {
+    changeListeners :=
+      changeListeners^
+      |> Tablecloth.List.filter(~f=changeFn => changeFn !== fn);
+  };
+
+  let callChangeListeners = ops => {
+    changeListeners^ |> Tablecloth.List.iter(~f=fn => fn(ops));
+  };
+
   let handleOperation = (~handleUndo, data, op) => {
     switch (op) {
     | Remove(id) =>
@@ -218,22 +235,19 @@ module Make = (Config: ListConfig) => {
 
   Manager.register(moduleId, baseApply);
 
-  let apply = ops => Manager.apply(moduleId, ops);
+  let apply = ops => {
+    let res = Manager.apply(moduleId, ops);
+    callChangeListeners(ops);
+    res;
+  };
   let addToTransaction = ops => {
     let prevCollection = getSnapshot();
     Manager.addToTransaction(moduleId, ops, () => {setData(prevCollection)});
   };
-  // let applyTransaction = ops => {
-  //   switch (Manager.applyTransaction(moduleId, ops)) {
-  //   | Ok(_data) as ok => ok
-  //   | Error(_) as err =>
-  //     setData(prevCollection);
-  //     err;
-  //   };
-  // };
 
   let length = () => getSnapshot() |> Tablecloth.List.length;
   let __resetCollection__ = () => {
     wrapper := [];
+    changeListeners := [];
   };
 };

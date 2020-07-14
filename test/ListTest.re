@@ -57,6 +57,45 @@ describe("List", t => {
     |> ignore;
     expect.equal(UserList.length(), 10);
   });
+  test("should listen", ({expect}) => {
+    let mock = Mock.mock1(_ => ());
+    expect.mock(mock).toBeCalledTimes(0);
+    UserList.addChangeListener(Mock.fn(mock));
+    userStdList
+    |> Stdlib.List.map(u => UserList.Append(u))
+    |> UserList.apply
+    |> ignore;
+    expect.equal(UserList.length(), 10);
+    expect.mock(mock).toBeCalledTimes(1);
+  });
+
+  test("should remove listener", ({expect}) => {
+    let mock = Mock.mock1(_ => ());
+    let mock2 = Mock.mock1(_ => ());
+    expect.mock(mock).toBeCalledTimes(0);
+    let listener = Mock.fn(mock);
+    let listener2 = Mock.fn(mock2);
+
+    UserList.addChangeListener(listener);
+    UserList.addChangeListener(listener2);
+
+    userStdList
+    |> Stdlib.List.map(u => UserList.Append(u))
+    |> UserList.apply
+    |> ignore;
+    expect.mock(mock).toBeCalledTimes(1);
+    expect.mock(mock2).toBeCalledTimes(1);
+
+    UserList.removeChangeListener(listener);
+
+    userStdList
+    |> Stdlib.List.map(u => UserList.Append(u))
+    |> UserList.apply
+    |> ignore;
+    expect.mock(mock).toBeCalledTimes(1);
+    expect.mock(mock2).toBeCalledTimes(2);
+  });
+
   test("should add after", ({expect}) => {
     userStdList
     |> Stdlib.List.map(u => UserList.Append(u))

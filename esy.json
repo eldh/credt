@@ -38,6 +38,7 @@
     "@opam/dune": ">=1.6.0",
     "@opam/tablecloth-native": "*",
     "@reason-native/rely": "^3.2.1",
+    "@opam/ocaml-lsp-server": "ocaml/ocaml-lsp:ocaml-lsp-server.opam",
     "ocaml": "^4.4.0"
   },
   "devDependencies": {

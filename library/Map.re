@@ -40,6 +40,23 @@ module Make = (Config: Config) => {
   let getSnapshot = () => wrapper^;
   let get = id => IMap.find(id, getSnapshot());
 
+  type changeListener = list(operation) => unit;
+  let changeListeners: ref(list(changeListener)) = ref([]);
+
+  let addChangeListener = fn => {
+    changeListeners := [fn, ...changeListeners^];
+  };
+
+  let removeChangeListener = fn => {
+    changeListeners :=
+      changeListeners^
+      |> Tablecloth.List.filter(~f=changeFn => changeFn !== fn);
+  };
+
+  let callChangeListeners = ops => {
+    changeListeners^ |> Tablecloth.List.iter(~f=fn => fn(ops));
+  };
+
   let handleOperation = (~handleUndo, data, op) => {
     switch (op) {
     | Remove(id) =>
@@ -100,7 +117,11 @@ module Make = (Config: Config) => {
   /* Apply operations that should not be part of the undo/redo handling */
   let applyRemoteOperations = baseApply(~handleUndo=ignore);
 
-  let apply = ops => Manager.apply(moduleId, ops);
+  let apply = ops => {
+    let res = Manager.apply(moduleId, ops);
+    callChangeListeners(ops);
+    res;
+  };
   let addToTransaction = ops => {
     let prevCollection = getSnapshot();
     Manager.addToTransaction(moduleId, ops, () => {setMap(prevCollection)});
@@ -108,6 +129,7 @@ module Make = (Config: Config) => {
 
   let __resetCollection__ = () => {
     wrapper := IMap.empty;
+    changeListeners := [];
   };
 
   let toList = m =>

@@ -14,26 +14,44 @@ let mapError = fn =>
   fun
   | Ok(_) as a => a
   | Error(err) => Error(fn(err));
+type changeListener = list(undoOperation) => unit;
+let changeListeners: ref(list(changeListener)) = ref([]);
+
+let addChangeListener = fn => {
+  changeListeners := [fn, ...changeListeners^];
+};
+
+let removeChangeListener = fn => {
+  changeListeners :=
+    changeListeners^ |> Tablecloth.List.filter(~f=changeFn => changeFn !== fn);
+};
+
+let callChangeListeners = ops => {
+  changeListeners^ |> Tablecloth.List.iter(~f=fn => fn(ops));
+};
 
 let baseApply = (~handleUndo, ops: list(undoOperation)) => {
-  applyFns^
-  |> Tablecloth.List.map(~f=((id, fn)) => {
-       ops
-       |> Tablecloth.List.filterMap(~f=((opId, op)) =>
-            id === opId ? Some(op) : None
-          )
-       |> fn(~handleUndo=op => handleUndo((id, op)))
-       |> mapError(Tablecloth.List.map(~f=err => (id, err)))
-     })
-  |> Tablecloth.List.fold_left(~initial=Ok(), ~f=(res, memo) => {
-       switch (memo, res) {
-       | (Ok (), Ok ()) => Ok()
-       | (Error(_) as e, Ok ())
-       | (Ok (), Error(_) as e) => e
-       | (Error(memoErrs), Error(errs)) =>
-         Error(Tablecloth.List.concat([memoErrs, errs]))
-       }
-     });
+  let res =
+    applyFns^
+    |> Tablecloth.List.map(~f=((id, fn)) => {
+         ops
+         |> Tablecloth.List.filterMap(~f=((opId, op)) =>
+              id === opId ? Some(op) : None
+            )
+         |> fn(~handleUndo=op => handleUndo((id, op)))
+         |> mapError(Tablecloth.List.map(~f=err => (id, err)))
+       })
+    |> Tablecloth.List.fold_left(~initial=Ok(), ~f=(res, memo) => {
+         switch (memo, res) {
+         | (Ok (), Ok ()) => Ok()
+         | (Error(_) as e, Ok ())
+         | (Ok (), Error(_) as e) => e
+         | (Error(memoErrs), Error(errs)) =>
+           Error(Tablecloth.List.concat([memoErrs, errs]))
+         }
+       });
+  callChangeListeners(ops);
+  res;
 };
 
 module Undo =

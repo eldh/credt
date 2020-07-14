@@ -1,0 +1,6 @@
+{
+  "ocaml.sandbox": {
+    "root": "/Users/eldh/Code/credt",
+    "kind": "esy"
+  }
+}

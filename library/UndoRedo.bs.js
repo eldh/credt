@@ -67,8 +67,12 @@ function Make(C) {
       return ok;
     }
   };
-  var canUndo = Tablecloth.List.length(undoHistory.contents) > 0;
-  var canRedo = Tablecloth.List.length(redoHistory.contents) > 0;
+  var canUndo = function (param) {
+    return Tablecloth.List.length(undoHistory.contents) > 0;
+  };
+  var canRedo = function (param) {
+    return Tablecloth.List.length(redoHistory.contents) > 0;
+  };
   var undo = function (param) {
     var match = undoHistory.contents;
     if (match) {

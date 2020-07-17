@@ -49,8 +49,8 @@ module Make =
     };
   };
 
-  let canUndo = getUndoHistory() |> Tablecloth.List.length > 0;
-  let canRedo = getRedoHistory() |> Tablecloth.List.length > 0;
+  let canUndo = () => getUndoHistory() |> Tablecloth.List.length > 0;
+  let canRedo = () => getRedoHistory() |> Tablecloth.List.length > 0;
   let undo = () => {
     switch (undoHistory^) {
     | [] => Ok()

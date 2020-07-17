@@ -64,6 +64,12 @@ let apply = (id: Util.id, ops) => {
   Undo.apply(ops |> Tablecloth.List.map(~f=op => (id, op |> toOp)));
 };
 
+let applyTransaction = (id: Util.id, ops) => {
+  Undo.applyTransaction(
+    ops |> Tablecloth.List.map(~f=op => (id, op |> toOp)),
+  );
+};
+
 let transaction: ref(list(undoOperation)) = ref([]);
 let transactionRollbacks: ref(list(unit => unit)) = ref([]);
 
@@ -90,14 +96,15 @@ let commitTransaction = () => {
   };
 };
 
-let applyTransaction = (id: Util.id, ops) => {
-  Undo.applyTransaction(
-    ops |> Tablecloth.List.map(~f=op => (id, op |> toOp)),
-  );
-};
-
 let undo = Undo.undo;
+let canUndo = Undo.canUndo;
 let getUndoHistory = Undo.getUndoHistory;
 let redo = Undo.redo;
+let canRedo = Undo.canRedo;
 let getRedoHistory = Undo.getRedoHistory;
-let __reset__ = Undo.__reset__;
+let __reset__ = () => {
+  transaction := [];
+  changeListeners := [];
+  transactionRollbacks := [];
+  Undo.__reset__();
+};

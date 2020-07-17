@@ -33,46 +33,73 @@ function mapError(fn, a) {
   }
 }
 
+var changeListeners = {
+  contents: /* [] */0
+};
+
+function addChangeListener(fn) {
+  changeListeners.contents = /* :: */[
+    fn,
+    changeListeners.contents
+  ];
+  return /* () */0;
+}
+
+function removeChangeListener(fn) {
+  changeListeners.contents = Tablecloth.List.filter((function (changeFn) {
+          return changeFn !== fn;
+        }), changeListeners.contents);
+  return /* () */0;
+}
+
+function callChangeListeners(ops) {
+  return Tablecloth.List.iter((function (fn) {
+                return Curry._1(fn, ops);
+              }), changeListeners.contents);
+}
+
 function baseApply(handleUndo, ops) {
-  return Tablecloth.List.fold_left((function (res, memo) {
-                if (memo.tag) {
-                  if (res.tag) {
-                    return /* Error */Block.__(1, [Tablecloth.List.concat(/* :: */[
-                                    memo[0],
-                                    /* :: */[
-                                      res[0],
-                                      /* [] */0
-                                    ]
-                                  ])]);
-                  } else {
-                    return memo;
-                  }
-                } else if (res.tag) {
-                  return res;
-                } else {
-                  return /* Ok */Block.__(0, [/* () */0]);
-                }
-              }), /* Ok */Block.__(0, [/* () */0]), Tablecloth.List.map((function (param) {
-                    var id = param[0];
-                    return mapError((function (param) {
-                                  return Tablecloth.List.map((function (err) {
-                                                return /* tuple */[
-                                                        id,
-                                                        err
-                                                      ];
-                                              }), param);
-                                }), Curry._2(param[1], (function (op) {
-                                      return Curry._1(handleUndo, /* tuple */[
+  var res = Tablecloth.List.fold_left((function (res, memo) {
+          if (memo.tag) {
+            if (res.tag) {
+              return /* Error */Block.__(1, [Tablecloth.List.concat(/* :: */[
+                              memo[0],
+                              /* :: */[
+                                res[0],
+                                /* [] */0
+                              ]
+                            ])]);
+            } else {
+              return memo;
+            }
+          } else if (res.tag) {
+            return res;
+          } else {
+            return /* Ok */Block.__(0, [/* () */0]);
+          }
+        }), /* Ok */Block.__(0, [/* () */0]), Tablecloth.List.map((function (param) {
+              var id = param[0];
+              return mapError((function (param) {
+                            return Tablecloth.List.map((function (err) {
+                                          return /* tuple */[
                                                   id,
-                                                  op
-                                                ]);
-                                    }), Tablecloth.List.filterMap((function (param) {
-                                          if (id === param[0]) {
-                                            return Caml_option.some(param[1]);
-                                          }
-                                          
-                                        }), ops)));
-                  }), applyFns.contents));
+                                                  err
+                                                ];
+                                        }), param);
+                          }), Curry._2(param[1], (function (op) {
+                                return Curry._1(handleUndo, /* tuple */[
+                                            id,
+                                            op
+                                          ]);
+                              }), Tablecloth.List.filterMap((function (param) {
+                                    if (id === param[0]) {
+                                      return Caml_option.some(param[1]);
+                                    }
+                                    
+                                  }), ops)));
+            }), applyFns.contents));
+  callChangeListeners(ops);
+  return res;
 }
 
 var Undo = UndoRedo.Make({
@@ -81,6 +108,15 @@ var Undo = UndoRedo.Make({
 
 function apply(id, ops) {
   return Curry._1(Undo.apply, Tablecloth.List.map((function (op) {
+                    return /* tuple */[
+                            id,
+                            op
+                          ];
+                  }), ops));
+}
+
+function applyTransaction(id, ops) {
+  return Curry._1(Undo.applyTransaction, Tablecloth.List.map((function (op) {
                     return /* tuple */[
                             id,
                             op
@@ -132,41 +168,47 @@ function commitTransaction(param) {
   }
 }
 
-function applyTransaction(id, ops) {
-  return Curry._1(Undo.applyTransaction, Tablecloth.List.map((function (op) {
-                    return /* tuple */[
-                            id,
-                            op
-                          ];
-                  }), ops));
+function __reset__(param) {
+  transaction.contents = /* [] */0;
+  changeListeners.contents = /* [] */0;
+  transactionRollbacks.contents = /* [] */0;
+  return Curry._1(Undo.__reset__, /* () */0);
 }
 
 var undo = Undo.undo;
+
+var canUndo = Undo.canUndo;
 
 var getUndoHistory = Undo.getUndoHistory;
 
 var redo = Undo.redo;
 
-var getRedoHistory = Undo.getRedoHistory;
+var canRedo = Undo.canRedo;
 
-var __reset__ = Undo.__reset__;
+var getRedoHistory = Undo.getRedoHistory;
 
 export {
   toOp ,
   applyFns ,
   register ,
   mapError ,
+  changeListeners ,
+  addChangeListener ,
+  removeChangeListener ,
+  callChangeListeners ,
   baseApply ,
   Undo ,
   apply ,
+  applyTransaction ,
   transaction ,
   transactionRollbacks ,
   addToTransaction ,
   commitTransaction ,
-  applyTransaction ,
   undo ,
+  canUndo ,
   getUndoHistory ,
   redo ,
+  canRedo ,
   getRedoHistory ,
   __reset__ ,
   

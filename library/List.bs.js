@@ -126,6 +126,27 @@ function Make(Config) {
     wrapper.contents = updatedInternalData;
     return /* () */0;
   };
+  var changeListeners = {
+    contents: /* [] */0
+  };
+  var addChangeListener = function (fn) {
+    changeListeners.contents = /* :: */[
+      fn,
+      changeListeners.contents
+    ];
+    return /* () */0;
+  };
+  var removeChangeListener = function (fn) {
+    changeListeners.contents = Tablecloth.List.filter((function (changeFn) {
+            return changeFn !== fn;
+          }), changeListeners.contents);
+    return /* () */0;
+  };
+  var callChangeListeners = function (ops) {
+    return Tablecloth.List.iter((function (fn) {
+                  return Curry._1(fn, ops);
+                }), changeListeners.contents);
+  };
   var handleOperation = function (handleUndo, data, op) {
     switch (op.tag | 0) {
       case /* Append */0 :
@@ -330,7 +351,9 @@ function Make(Config) {
   };
   Manager.register(Config.moduleId, baseApply);
   var apply = function (ops) {
-    return Manager.apply(Config.moduleId, ops);
+    var res = Manager.apply(Config.moduleId, ops);
+    callChangeListeners(ops);
+    return res;
   };
   var addToTransaction = function (ops) {
     var prevCollection = wrapper.contents;
@@ -344,6 +367,7 @@ function Make(Config) {
   };
   var __resetCollection__ = function (param) {
     wrapper.contents = /* [] */0;
+    changeListeners.contents = /* [] */0;
     return /* () */0;
   };
   return {
@@ -354,6 +378,10 @@ function Make(Config) {
           get: get,
           getExn: getExn,
           setData: setData,
+          changeListeners: changeListeners,
+          addChangeListener: addChangeListener,
+          removeChangeListener: removeChangeListener,
+          callChangeListeners: callChangeListeners,
           handleOperation: handleOperation,
           baseApply: baseApply,
           applyRemoteOperations: applyRemoteOperations,

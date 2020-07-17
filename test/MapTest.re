@@ -63,6 +63,47 @@ describe("Map", ({test, testOnly}) => {
     expect.equal(me.email, "andreas@eldh.co");
     expect.equal(UserMap.get(me.id).email, "a@eldh.co");
   });
+  test("should listen", ({expect}) => {
+    let mock = Mock.mock1(_ => ());
+    expect.mock(mock).toBeCalledTimes(0);
+    UserMap.addChangeListener(Mock.fn(mock));
+    [makeUser(2), makeUser(1)]
+    |> Stdlib.List.map(u => UserMap.Add(u))
+    |> UserMap.apply
+    |> ignore;
+    expect.equal(
+      UserMap.getSnapshot() |> UserMap.toList |> Stdlib.List.length,
+      2,
+    );
+    expect.mock(mock).toBeCalledTimes(1);
+  });
+
+  test("should remove listener", ({expect}) => {
+    let mock = Mock.mock1(_ => ());
+    let mock2 = Mock.mock1(_ => ());
+    expect.mock(mock).toBeCalledTimes(0);
+    let listener = Mock.fn(mock);
+    let listener2 = Mock.fn(mock2);
+
+    UserMap.addChangeListener(listener);
+    UserMap.addChangeListener(listener2);
+
+    [makeUser(2), makeUser(1)]
+    |> Stdlib.List.map(u => UserMap.Add(u))
+    |> UserMap.apply
+    |> ignore;
+    expect.mock(mock).toBeCalledTimes(1);
+    expect.mock(mock2).toBeCalledTimes(1);
+
+    UserMap.removeChangeListener(listener);
+
+    [makeUser(3), makeUser(4)]
+    |> Stdlib.List.map(u => UserMap.Add(u))
+    |> UserMap.apply
+    |> ignore;
+    expect.mock(mock).toBeCalledTimes(1);
+    expect.mock(mock2).toBeCalledTimes(2);
+  });
 
   test("should handle illegal operation", ({expect}) => {
     let user = makeUser(1);

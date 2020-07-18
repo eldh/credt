@@ -64,12 +64,6 @@ let apply = (id: Util.id, ops) => {
   Undo.apply(ops |> Tablecloth.List.map(~f=op => (id, op |> toOp)));
 };
 
-let applyTransaction = (id: Util.id, ops) => {
-  Undo.applyTransaction(
-    ops |> Tablecloth.List.map(~f=op => (id, op |> toOp)),
-  );
-};
-
 let transaction: ref(list(undoOperation)) = ref([]);
 let transactionRollbacks: ref(list(unit => unit)) = ref([]);
 
@@ -82,13 +76,14 @@ let addToTransaction = (id, ops, rollback) => {
   transactionRollbacks := [rollback, ...transactionRollbacks^];
 };
 
-let commitTransaction = () => {
-  switch (Undo.applyTransaction(transaction^)) {
-  | Ok () =>
+let commitTransaction = (~allowErrors=false, ()) => {
+  switch (allowErrors, Undo.applyTransaction(~allowErrors, transaction^)) {
+  | (true, Error(_) as res)
+  | (_, Ok () as res) =>
     transactionRollbacks := [];
     transaction := [];
-    Ok();
-  | Error(_) as e =>
+    res;
+  | (false, Error(_) as e) =>
     transactionRollbacks^ |> Tablecloth.List.iter(~f=f => f());
     transactionRollbacks := [];
     transaction := [];

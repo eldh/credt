@@ -293,6 +293,35 @@ describe("List", t => {
     expect.equal(Credt.Manager.getRedoHistory() |> Stdlib.List.length, 0);
   });
 
+  test("should allow errors in transaction", ({expect}) => {
+    let me = {
+      UserList.id: Credt.Util.makeId(),
+      name: "Andreas",
+      email: "andreas@eldh.co",
+      age: 35,
+    };
+
+    let miniMe = {
+      UserList.id: Credt.Util.makeId(),
+      name: "Sixten",
+      email: "sixten@eldh.co",
+      age: 2,
+    };
+
+    [
+      UserList.Append(me),
+      Update("bla" |> Credt.Util.idOfString, SetEmail("a@eldh.co")),
+      UserList.Append(miniMe),
+      Update(miniMe.id, SetName("Sixten Eldh")),
+    ]
+    |> UserList.addToTransaction;
+    expect.result(Credt.Manager.commitTransaction(~allowErrors=true, ())).
+      toBeError();
+    expect.equal(UserList.getSnapshot() |> Stdlib.List.length, 2);
+    expect.equal(Credt.Manager.getUndoHistory() |> Stdlib.List.length, 1);
+    expect.equal(Credt.Manager.getRedoHistory() |> Stdlib.List.length, 0);
+  });
+
   test("should handle undo & redo", ({expect}) => {
     let miniMe = {
       UserList.id: Credt.Util.makeId(),

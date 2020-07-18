@@ -40,12 +40,15 @@ module Make =
 
   let apply = C.apply(~handleUndo=addUndo);
 
-  let applyTransaction = ops => {
-    switch (ops |> C.apply(~handleUndo=ignore)) {
-    | Ok(_) as ok =>
+  let applyTransaction = (~allowErrors, ops) => {
+    switch (allowErrors, ops |> C.apply(~handleUndo=ignore)) {
+    | (_, Ok(_) as ok) =>
       addUndoTransaction(ops);
       ok;
-    | Error(_) as err => err
+    | (true, Error(_) as err) =>
+      addUndoTransaction(ops);
+      err;
+    | (false, Error(_) as err) => err
     };
   };
 

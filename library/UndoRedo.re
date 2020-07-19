@@ -1,5 +1,3 @@
-exception NotImplemented;
-// TODO Perhaps handle cases where undo/redo cannot be applied in a better way. Now we just pop from the list and return the apply error.
 module Make =
        (
          C: {
@@ -41,12 +39,18 @@ module Make =
   let apply = C.apply(~handleUndo=addUndo);
 
   let applyTransaction = (~allowErrors, ops) => {
-    switch (allowErrors, ops |> C.apply(~handleUndo=ignore)) {
+    let undoOps: ref(list((Util.id, C.operation))) = ref([]);
+    let collectUndoOps = op => {
+      undoOps := [op] @ undoOps^;
+    };
+    switch (allowErrors, ops |> C.apply(~handleUndo=collectUndoOps)) {
     | (_, Ok(_) as ok) =>
-      addUndoTransaction(ops);
+      addUndoTransaction(undoOps^);
+      undoOps := [];
       ok;
     | (true, Error(_) as err) =>
-      addUndoTransaction(ops);
+      addUndoTransaction(undoOps^);
+      undoOps := [];
       err;
     | (false, Error(_) as err) => err
     };

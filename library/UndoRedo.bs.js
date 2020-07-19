@@ -4,9 +4,6 @@ import * as Block from "bs-platform/lib/es6/block.js";
 import * as Curry from "bs-platform/lib/es6/curry.js";
 import * as Pervasives from "bs-platform/lib/es6/pervasives.js";
 import * as Tablecloth from "tablecloth-bucklescript/bucklescript/src/tablecloth.bs.js";
-import * as Caml_exceptions from "bs-platform/lib/es6/caml_exceptions.js";
-
-var NotImplemented = Caml_exceptions.create("UndoRedo.NotImplemented");
 
 function Make(C) {
   var undoHistory = {
@@ -56,15 +53,30 @@ function Make(C) {
     return /* () */0;
   };
   var apply = Curry._1(C.apply, addUndo);
-  var applyTransaction = function (ops) {
-    var ok = Curry._2(C.apply, (function (prim) {
-            return /* () */0;
-          }), ops);
-    if (ok.tag) {
-      return ok;
+  var applyTransaction = function (allowErrors, ops) {
+    var undoOps = {
+      contents: /* [] */0
+    };
+    var collectUndoOps = function (op) {
+      undoOps.contents = Pervasives.$at(/* :: */[
+            op,
+            /* [] */0
+          ], undoOps.contents);
+      return /* () */0;
+    };
+    var match = Curry._2(C.apply, collectUndoOps, ops);
+    if (match.tag) {
+      if (allowErrors) {
+        addUndoTransaction(undoOps.contents);
+        undoOps.contents = /* [] */0;
+        return match;
+      } else {
+        return match;
+      }
     } else {
-      addUndoTransaction(ops);
-      return ok;
+      addUndoTransaction(undoOps.contents);
+      undoOps.contents = /* [] */0;
+      return match;
     }
   };
   var canUndo = function (param) {
@@ -150,7 +162,6 @@ function Make(C) {
 }
 
 export {
-  NotImplemented ,
   Make ,
   
 }

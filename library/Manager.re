@@ -14,6 +14,7 @@ let mapError = fn =>
   fun
   | Ok(_) as a => a
   | Error(err) => Error(fn(err));
+
 type changeListener = list(undoOperation) => unit;
 let changeListeners: ref(list(changeListener)) = ref([]);
 

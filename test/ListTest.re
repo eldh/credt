@@ -320,6 +320,10 @@ describe("List", t => {
     expect.equal(UserList.getSnapshot() |> Stdlib.List.length, 2);
     expect.equal(Credt.Manager.getUndoHistory() |> Stdlib.List.length, 1);
     expect.equal(Credt.Manager.getRedoHistory() |> Stdlib.List.length, 0);
+    expect.result(Credt.Manager.undo()).toBeOk();
+    expect.equal(UserList.getSnapshot() |> Stdlib.List.length, 0);
+    expect.equal(Credt.Manager.getUndoHistory() |> Stdlib.List.length, 0);
+    expect.equal(Credt.Manager.getRedoHistory() |> Stdlib.List.length, 1);
   });
 
   test("should handle undo & redo", ({expect}) => {

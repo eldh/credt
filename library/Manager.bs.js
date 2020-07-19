@@ -115,15 +115,6 @@ function apply(id, ops) {
                   }), ops));
 }
 
-function applyTransaction(id, ops) {
-  return Curry._1(Undo.applyTransaction, Tablecloth.List.map((function (op) {
-                    return /* tuple */[
-                            id,
-                            op
-                          ];
-                  }), ops));
-}
-
 var transaction = {
   contents: /* [] */0
 };
@@ -152,20 +143,23 @@ function addToTransaction(id, ops, rollback) {
   return /* () */0;
 }
 
-function commitTransaction(param) {
-  var e = Curry._1(Undo.applyTransaction, transaction.contents);
-  if (e.tag) {
+function commitTransaction(allowErrorsOpt, param) {
+  var allowErrors = allowErrorsOpt !== undefined ? allowErrorsOpt : false;
+  var match = Curry._2(Undo.applyTransaction, allowErrors, transaction.contents);
+  var res;
+  if (allowErrors || !match.tag) {
+    res = match;
+  } else {
     Tablecloth.List.iter((function (f) {
             return Curry._1(f, /* () */0);
           }), transactionRollbacks.contents);
     transactionRollbacks.contents = /* [] */0;
     transaction.contents = /* [] */0;
-    return e;
-  } else {
-    transactionRollbacks.contents = /* [] */0;
-    transaction.contents = /* [] */0;
-    return /* Ok */Block.__(0, [/* () */0]);
+    return match;
   }
+  transactionRollbacks.contents = /* [] */0;
+  transaction.contents = /* [] */0;
+  return res;
 }
 
 function __reset__(param) {
@@ -199,7 +193,6 @@ export {
   baseApply ,
   Undo ,
   apply ,
-  applyTransaction ,
   transaction ,
   transactionRollbacks ,
   addToTransaction ,

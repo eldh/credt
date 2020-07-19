@@ -134,6 +134,10 @@ module Tests = {
       |> ignore;
       expect.result(Credt.Manager.commitTransaction()).toBeOk();
       expect.result(Credt.Manager.undo()).toBeOk();
+      expect.equal(
+        UserMap.getSnapshot() |> UserMap.toList |> Stdlib.List.length,
+        0,
+      );
       expect.bool(Credt.Manager.canUndo()).toBeFalse();
     });
 
@@ -159,6 +163,7 @@ module Tests = {
       Credt.Manager.commitTransaction() |> ignore;
       expect.equal(Credt.Manager.getUndoHistory() |> Stdlib.List.length, 1);
       Credt.Manager.undo() |> ignore;
+
       expect.equal(Credt.Manager.getUndoHistory() |> Stdlib.List.length, 0);
       Credt.Manager.redo() |> ignore;
       expect.equal(Credt.Manager.getUndoHistory() |> Stdlib.List.length, 1);

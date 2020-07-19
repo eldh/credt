@@ -1,6 +1,7 @@
 {
   "name": "credt",
   "version": "0.0.1",
+  "license": "MIT",
   "description": "CRDT-like data structures in reasonml",
   "files": [
     "library/*",

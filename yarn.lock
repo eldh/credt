@@ -9,4 +9,4 @@ bs-platform@^8.0.3:
 
 tablecloth-bucklescript@eldh/tablecloth#bs8:
   version "0.0.6"
-  resolved "https://codeload.github.com/eldh/tablecloth/tar.gz/edf95ccd0e2c71c2ce736a8efa1269992b4c84ad"
+  resolved "https://codeload.github.com/eldh/tablecloth/tar.gz/f7f94fca63819c32c1af527e86191b475e82af9c"

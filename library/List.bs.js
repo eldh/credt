@@ -4,7 +4,7 @@ import * as Util from "./Util.bs.js";
 import * as Curry from "bs-platform/lib/es6/curry.js";
 import * as Manager from "./Manager.bs.js";
 import * as Pervasives from "bs-platform/lib/es6/pervasives.js";
-import * as Tablecloth from "tablecloth/bucklescript/src/tablecloth.bs.js";
+import * as Tablecloth from "tablecloth-bucklescript/bucklescript/src/tablecloth.bs.js";
 import * as Caml_option from "bs-platform/lib/es6/caml_option.js";
 import * as Caml_exceptions from "bs-platform/lib/es6/caml_exceptions.js";
 import * as Caml_js_exceptions from "bs-platform/lib/es6/caml_js_exceptions.js";

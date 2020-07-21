@@ -2,7 +2,7 @@
 
 import * as Curry from "bs-platform/lib/es6/curry.js";
 import * as Pervasives from "bs-platform/lib/es6/pervasives.js";
-import * as Tablecloth from "tablecloth/bucklescript/src/tablecloth.bs.js";
+import * as Tablecloth from "tablecloth-bucklescript/bucklescript/src/tablecloth.bs.js";
 
 function Make(C) {
   var undoHistory = {

@@ -70,7 +70,7 @@ function Make(C) {
           map: Belt_MapString.map,
           mapWithKeyU: Belt_MapString.mapWithKeyU,
           mapWithKey: Belt_MapString.mapWithKey,
-          empty: null,
+          empty: undefined,
           add: add,
           cardinal: Belt_MapString.size,
           remove: remove,
@@ -85,7 +85,7 @@ var $$Map = {
   Make: Make
 };
 
-var List = { };
+var List = {};
 
 export {
   $$Map ,

@@ -2,11 +2,11 @@
 # yarn lockfile v1
 
 
-bs-platform@7.2.1:
-  version "7.2.1"
-  resolved "https://registry.yarnpkg.com/bs-platform/-/bs-platform-7.2.1.tgz#8a7084fb4c7c929075fe211e44627f7b478506b8"
-  integrity sha512-5Opx+I/+f0nWwDmjWhE7B2xAIR4tzQKY7OPFtYO/Eprx3hnLruDPu/jAyShU+Fv8qPWnYcqulw+i0UKOE72kNA==
+bs-platform@^8.0.3:
+  version "8.0.3"
+  resolved "https://registry.yarnpkg.com/bs-platform/-/bs-platform-8.0.3.tgz#574e41ec04fee381d4c400dac547735368caa48f"
+  integrity sha512-I7wulOPM0/NGamwm9CDh9rGjW1oIKltPwwEIOJrL8DBFRXI8OFSACtWGlpaoOw76Xpf+KcVokr00keS2NlzA3A==
 
-tablecloth-bucklescript@darklang/tablecloth:
-  version "0.0.7"
-  resolved "https://codeload.github.com/darklang/tablecloth/tar.gz/05dbd450e95e38c3b896ddde754615d32208f0e4"
+tablecloth-bucklescript@eldh/tablecloth#bs8:
+  version "0.0.6"
+  resolved "https://codeload.github.com/eldh/tablecloth/tar.gz/edf95ccd0e2c71c2ce736a8efa1269992b4c84ad"

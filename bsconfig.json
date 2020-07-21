@@ -1,6 +1,6 @@
 {
   "name": "credt",
-  "namespace": false,
+  "namespace": "credt",
   "bsc-flags": ["-bs-no-version-header", "-bs-super-errors"],
   "sources": ["bs", "library"],
   "suffix": ".bs.js",

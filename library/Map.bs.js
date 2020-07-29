@@ -1,21 +1,23 @@
 
 
-import * as Util from "./Util.bs.js";
 import * as Curry from "bs-platform/lib/es6/curry.js";
-import * as Stdlib from "../bs/Stdlib.bs.js";
-import * as Manager from "./Manager.bs.js";
 import * as Caml_obj from "bs-platform/lib/es6/caml_obj.js";
 import * as Tablecloth from "tablecloth-bucklescript/bucklescript/src/tablecloth.bs.js";
+import * as Util$Credt from "./Util.bs.js";
 import * as Caml_option from "bs-platform/lib/es6/caml_option.js";
+import * as Stdlib$Credt from "../bs/Stdlib.bs.js";
+import * as Manager$Credt from "./Manager.bs.js";
 import * as Caml_exceptions from "bs-platform/lib/es6/caml_exceptions.js";
 
-var NotImplemented = Caml_exceptions.create("Map.NotImplemented");
+var NotImplemented = Caml_exceptions.create("Map-Credt.NotImplemented");
+
+var compare = Caml_obj.caml_compare;
+
+var IMap = Stdlib$Credt.$$Map.Make({
+      compare: compare
+    });
 
 function Make(Config) {
-  var compare = Caml_obj.caml_compare;
-  var IMap = Stdlib.$$Map.Make({
-        compare: compare
-      });
   var mapRemove = function (id, data) {
     var match = Curry._2(IMap.find_opt, id, data);
     if (match !== undefined) {
@@ -44,15 +46,17 @@ function Make(Config) {
             };
     }
   };
-  var internalId = Util.idOfString("__internal__");
-  var internalData = IMap.empty;
+  var internalId = Util$Credt.idOfString("__internal__");
   var wrapper = {
-    contents: internalData
+    contents: IMap.empty
   };
   var getSnapshot = function (param) {
     return wrapper.contents;
   };
   var get = function (id) {
+    return Curry._2(IMap.find_opt, id, wrapper.contents);
+  };
+  var getExn = function (id) {
     return Curry._2(IMap.find, id, wrapper.contents);
   };
   var changeListeners = {
@@ -91,8 +95,17 @@ function Make(Config) {
                 };
       case /* Remove */1 :
           var id$1 = op._0;
-          var a = mapRemove(id$1, data);
-          if (a.TAG) {
+          var item = Curry._2(IMap.find_opt, id$1, wrapper.contents);
+          var match = mapRemove(id$1, data);
+          if (item === undefined) {
+            return {
+                    TAG: /* Error */1,
+                    _0: /* NotFound */{
+                      _0: op
+                    }
+                  };
+          }
+          if (match.TAG) {
             return {
                     TAG: /* Error */1,
                     _0: /* NotFound */{
@@ -102,13 +115,13 @@ function Make(Config) {
           }
           Curry._1(handleUndo, {
                 TAG: /* Add */0,
-                _0: Curry._2(IMap.find, id$1, wrapper.contents)
+                _0: Caml_option.valFromOption(item)
               });
-          return a;
+          return match;
       case /* Update */2 :
           var id$2 = op._0;
-          var item = mapFind(id$2, data);
-          if (item.TAG) {
+          var item$1 = mapFind(id$2, data);
+          if (item$1.TAG) {
             return {
                     TAG: /* Error */1,
                     _0: /* NotFound */{
@@ -116,15 +129,15 @@ function Make(Config) {
                     }
                   };
           }
-          var match = Curry._2(Config.reducer, item._0, op._1);
+          var match$1 = Curry._2(Config.reducer, item$1._0, op._1);
           Curry._1(handleUndo, {
                 TAG: /* Update */2,
                 _0: id$2,
-                _1: match[1]
+                _1: match$1[1]
               });
           return {
                   TAG: /* Ok */0,
-                  _0: Curry._3(IMap.add, id$2, match[0], data)
+                  _0: Curry._3(IMap.add, id$2, match$1[0], data)
                 };
       
     }
@@ -170,20 +183,20 @@ function Make(Config) {
             };
     }
   };
-  Manager.register(Config.moduleId, baseApply);
+  Manager$Credt.register(Config.moduleId, baseApply);
   var applyRemoteOperations = function (param) {
     return baseApply((function (prim) {
                   
                 }), param);
   };
   var apply = function (ops) {
-    var res = Manager.apply(Config.moduleId, ops);
+    var res = Manager$Credt.apply(Config.moduleId, ops);
     callChangeListeners(ops);
     return res;
   };
   var addToTransaction = function (ops) {
     var prevCollection = wrapper.contents;
-    return Manager.addToTransaction(Config.moduleId, ops, (function (param) {
+    return Manager$Credt.addToTransaction(Config.moduleId, ops, (function (param) {
                   wrapper.contents = prevCollection;
                   
                 }));
@@ -198,15 +211,23 @@ function Make(Config) {
                   return param[1];
                 }), Curry._1(IMap.to_seq, m));
   };
+  var instance = {
+    get: get,
+    getSnapshot: getSnapshot,
+    apply: apply,
+    applyRemoteOperations: applyRemoteOperations,
+    addToTransaction: addToTransaction,
+    addChangeListener: addChangeListener,
+    removeChangeListener: removeChangeListener
+  };
   return {
-          IMap: IMap,
           mapRemove: mapRemove,
           mapFind: mapFind,
           internalId: internalId,
-          internalData: internalData,
           wrapper: wrapper,
           getSnapshot: getSnapshot,
           get: get,
+          getExn: getExn,
           changeListeners: changeListeners,
           addChangeListener: addChangeListener,
           removeChangeListener: removeChangeListener,
@@ -218,13 +239,15 @@ function Make(Config) {
           apply: apply,
           addToTransaction: addToTransaction,
           __resetCollection__: __resetCollection__,
-          toList: toList
+          toList: toList,
+          instance: instance
         };
 }
 
 export {
   NotImplemented ,
+  IMap ,
   Make ,
   
 }
-/* Manager Not a pure module */
+/* IMap Not a pure module */

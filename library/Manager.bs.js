@@ -1,9 +1,9 @@
 
 
 import * as Curry from "bs-platform/lib/es6/curry.js";
-import * as UndoRedo from "./UndoRedo.bs.js";
 import * as Tablecloth from "tablecloth-bucklescript/bucklescript/src/tablecloth.bs.js";
 import * as Caml_option from "bs-platform/lib/es6/caml_option.js";
+import * as UndoRedo$Credt from "./UndoRedo.bs.js";
 
 function toOp(prim) {
   return prim;
@@ -113,7 +113,7 @@ function baseApply(handleUndo, ops) {
   return res;
 }
 
-var Undo = UndoRedo.Make({
+var Undo = UndoRedo$Credt.Make({
       apply: baseApply
     });
 

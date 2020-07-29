@@ -1,15 +1,15 @@
 
 
-import * as Util from "./Util.bs.js";
 import * as Curry from "bs-platform/lib/es6/curry.js";
-import * as Manager from "./Manager.bs.js";
 import * as Pervasives from "bs-platform/lib/es6/pervasives.js";
 import * as Tablecloth from "tablecloth-bucklescript/bucklescript/src/tablecloth.bs.js";
+import * as Util$Credt from "./Util.bs.js";
 import * as Caml_option from "bs-platform/lib/es6/caml_option.js";
+import * as Manager$Credt from "./Manager.bs.js";
 import * as Caml_exceptions from "bs-platform/lib/es6/caml_exceptions.js";
 import * as Caml_js_exceptions from "bs-platform/lib/es6/caml_js_exceptions.js";
 
-var NotImplemented = Caml_exceptions.create("List.NotImplemented");
+var NotImplemented = Caml_exceptions.create("List-Credt.NotImplemented");
 
 function listRemove(fn, list) {
   var foundItem = {
@@ -117,7 +117,7 @@ function Make(Config) {
       
     }
   };
-  var internalId = Util.idOfString("__internal__");
+  var internalId = Util$Credt.idOfString("__internal__");
   var wrapper = {
     contents: /* [] */0
   };
@@ -125,12 +125,12 @@ function Make(Config) {
     return wrapper.contents;
   };
   var get = function (id) {
-    return Tablecloth.Result.fromOption("Item not found", Tablecloth.List.find((function (item) {
-                      return Curry._1(Config.getId, item) === id;
-                    }), wrapper.contents));
+    return Tablecloth.List.find((function (item) {
+                  return Curry._1(Config.getId, item) === id;
+                }), wrapper.contents);
   };
   var getExn = function (id) {
-    return Tablecloth.$$Option.getExn(Tablecloth.Result.toOption(get(id)));
+    return Tablecloth.$$Option.getExn(get(id));
   };
   var setData = function (updatedInternalData) {
     wrapper.contents = updatedInternalData;
@@ -430,15 +430,15 @@ function Make(Config) {
                   
                 }), param);
   };
-  Manager.register(Config.moduleId, baseApply);
+  Manager$Credt.register(Config.moduleId, baseApply);
   var apply = function (ops) {
-    var res = Manager.apply(Config.moduleId, ops);
+    var res = Manager$Credt.apply(Config.moduleId, ops);
     callChangeListeners(ops);
     return res;
   };
   var addToTransaction = function (ops) {
     var prevCollection = wrapper.contents;
-    return Manager.addToTransaction(Config.moduleId, ops, (function (param) {
+    return Manager$Credt.addToTransaction(Config.moduleId, ops, (function (param) {
                   wrapper.contents = prevCollection;
                   
                 }));
@@ -450,6 +450,16 @@ function Make(Config) {
     wrapper.contents = /* [] */0;
     changeListeners.contents = /* [] */0;
     
+  };
+  var instance = {
+    get: get,
+    getSnapshot: getSnapshot,
+    apply: apply,
+    applyRemoteOperations: applyRemoteOperations,
+    length: length,
+    addToTransaction: addToTransaction,
+    addChangeListener: addChangeListener,
+    removeChangeListener: removeChangeListener
   };
   return {
           string_of_operation: string_of_operation,
@@ -469,7 +479,8 @@ function Make(Config) {
           apply: apply,
           addToTransaction: addToTransaction,
           length: length,
-          __resetCollection__: __resetCollection__
+          __resetCollection__: __resetCollection__,
+          instance: instance
         };
 }
 
@@ -483,4 +494,4 @@ export {
   Make ,
   
 }
-/* Manager Not a pure module */
+/* Tablecloth Not a pure module */

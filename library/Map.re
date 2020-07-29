@@ -7,19 +7,44 @@ module type Config = {
   let reducer: (t, update) => (t, update);
 };
 
+module IMap =
+  Stdlib.Map.Make({
+    type t = Util.id;
+    let compare = Pervasives.compare;
+  });
+
+type changeListenerT('operation) = list('operation) => unit;
+
+type collectionT('t) = IMap.t('t);
+
+type instanceT('t, 'operation) = {
+  get: Util.id => option('t),
+  getSnapshot: unit => collectionT('t),
+  apply:
+    list('operation) =>
+    result(unit, list((Util.id, Util.operationError(Manager.op)))),
+  applyRemoteOperations:
+    list('operation) => result(unit, list(Util.operationError('operation))),
+  addToTransaction: list('operation) => unit,
+  addChangeListener: changeListenerT('operation) => unit,
+  removeChangeListener: changeListenerT('operation) => unit,
+};
+
 module Make = (Config: Config) => {
   open Config;
-  module IMap =
-    Stdlib.Map.Make({
-      type t = Util.id;
-      let compare = Pervasives.compare;
-    });
+
+  type operation =
+    | Add(t)
+    | Remove(Util.id)
+    | Update(Util.id, update);
+
   let mapRemove = (id, data) => {
     switch (IMap.find_opt(id, data)) {
     | Some(_) => Ok(IMap.remove(id, data))
     | None => Error(`NotFound)
     };
   };
+
   let mapFind = (id, data) => {
     switch (IMap.find_opt(id, data)) {
     | Some(a) => Ok(a)
@@ -27,21 +52,14 @@ module Make = (Config: Config) => {
     };
   };
 
-  type operation =
-    | Add(t)
-    | Remove(Util.id)
-    | Update(Util.id, update);
-
-  type collection = IMap.t(t);
   let internalId = "__internal__" |> Util.idOfString;
-  let internalData = IMap.empty;
-  let wrapper = ref(internalData);
+  let wrapper = ref(IMap.empty);
 
   let getSnapshot = () => wrapper^;
-  let get = id => IMap.find(id, getSnapshot());
+  let get = id => IMap.find_opt(id, getSnapshot());
+  let getExn = id => IMap.find(id, getSnapshot());
 
-  type changeListener = list(operation) => unit;
-  let changeListeners: ref(list(changeListener)) = ref([]);
+  let changeListeners: ref(list(changeListenerT(operation))) = ref([]);
 
   let addChangeListener = fn => {
     changeListeners := [fn, ...changeListeners^];
@@ -60,12 +78,14 @@ module Make = (Config: Config) => {
   let handleOperation = (~handleUndo, data, op) => {
     switch (op) {
     | Remove(id) =>
-      switch (mapRemove(id, data)) {
-      | Ok(_) as a =>
-        handleUndo(Add(get(id)));
+      let item = get(id);
+      switch (item, mapRemove(id, data)) {
+      | (Some(item), Ok(_) as a) =>
+        handleUndo(Add(item));
         a;
-      | Error(_) => Error(Util.NotFound(op))
-      }
+      | (None, _)
+      | (Some(_), Error(_)) => Error(Util.NotFound(op))
+      };
     | Add(t) =>
       let id = t |> getId;
       handleUndo(Remove(id));
@@ -78,7 +98,6 @@ module Make = (Config: Config) => {
         Ok(IMap.add(id, newData, data));
       | Error(`NotFound) => Error(Util.NotFound(op))
       }
-    // | Transaction(_) => raise(NotImplemented)
     };
   };
 
@@ -122,19 +141,29 @@ module Make = (Config: Config) => {
     callChangeListeners(ops);
     res;
   };
+
   let addToTransaction = ops => {
     let prevCollection = getSnapshot();
     Manager.addToTransaction(moduleId, ops, () => {setMap(prevCollection)});
   };
-
   let __resetCollection__ = () => {
     wrapper := IMap.empty;
     changeListeners := [];
   };
-
   let toList = m =>
     m
     |> IMap.to_seq
     |> Stdlib.List.of_seq
     |> Tablecloth.List.map(~f=((_id, item: t)) => item);
+
+  let instance = {
+    get,
+    getSnapshot,
+    apply,
+    applyRemoteOperations,
+    addToTransaction,
+    addChangeListener,
+    removeChangeListener,
+  };
 };
+// module type T = (module type of Make(Config));

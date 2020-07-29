@@ -82,12 +82,15 @@ module Make = (Config: ListConfig) => {
 
   let getSnapshot = () => wrapper^;
 
-  let get = id =>
-    Tablecloth.List.find(~f=item => getId(item) === id, getSnapshot())
-    |> Tablecloth.Result.fromOption(~error="Item not found");
+  // let toResult: Tablecloth.Result.t('a, 'b) => result('b, 'a) =
+  //   fun
+  //   | Ok(a) => Ok(a)
+  //   | Error(a) => Error(a);
 
-  let getExn = id =>
-    id |> get |> Tablecloth.Result.toOption |> Tablecloth.Option.getExn;
+  let get = id =>
+    Tablecloth.List.find(~f=item => getId(item) === id, getSnapshot());
+
+  let getExn = id => id |> get |> Tablecloth.Option.getExn;
 
   let setData = updatedInternalData => {
     wrapper := updatedInternalData;
@@ -249,5 +252,30 @@ module Make = (Config: ListConfig) => {
   let __resetCollection__ = () => {
     wrapper := [];
     changeListeners := [];
+  };
+
+  type instance = {
+    get: Util.id => option(Config.t),
+    getSnapshot: unit => collection,
+    apply:
+      list(operation) =>
+      result(unit, list((Util.id, Util.operationError(Manager.op)))),
+    applyRemoteOperations:
+      list(operation) => result(unit, list(Util.operationError(operation))),
+    length: unit => int,
+    addToTransaction: list(operation) => unit,
+    addChangeListener: changeListener => unit,
+    removeChangeListener: changeListener => unit,
+  };
+
+  let instance = {
+    get,
+    getSnapshot,
+    apply,
+    applyRemoteOperations,
+    length,
+    addToTransaction,
+    addChangeListener,
+    removeChangeListener,
   };
 };

@@ -96,7 +96,7 @@ module Tests = {
 
       expect.bool(Credt.Manager.canUndo()).toBeTrue();
       expect.result(Credt.Manager.undo()).toBeOk();
-      expect.equal(UserMap.get(me.id).email, "andreas@eldh.co");
+      expect.equal(UserMap.getExn(me.id).email, "andreas@eldh.co");
     });
 
     test("canUndo should be false if no available undo", ({expect}) => {

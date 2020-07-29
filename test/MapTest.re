@@ -61,7 +61,7 @@ describe("Map", ({test, testOnly}) => {
       toBeOk();
 
     expect.equal(me.email, "andreas@eldh.co");
-    expect.equal(UserMap.get(me.id).email, "a@eldh.co");
+    expect.equal(UserMap.getExn(me.id).email, "a@eldh.co");
   });
   test("should listen", ({expect}) => {
     let mock = Mock.mock1(_ => ());
@@ -144,9 +144,9 @@ describe("Map", ({test, testOnly}) => {
     ).
       toBeOk();
 
-    expect.equal(UserMap.get(miniMe.id).name, "Sixten Eldh");
-    expect.equal(UserMap.get(me.id).email, "a@eldh.co");
-    expect.equal(UserMap.get(miniMe.id).age, 2);
+    expect.equal(UserMap.getExn(miniMe.id).name, "Sixten Eldh");
+    expect.equal(UserMap.getExn(me.id).email, "a@eldh.co");
+    expect.equal(UserMap.getExn(miniMe.id).age, 2);
   });
 
   test("should handle ok transaction", ({expect}) => {
@@ -154,8 +154,8 @@ describe("Map", ({test, testOnly}) => {
     let user2 = makeUser(2);
     UserMap.([Add(user1), Add(user2)] |> addToTransaction);
     expect.result(Credt.Manager.commitTransaction()).toBeOk();
-    expect.equal(user1.name, UserMap.get(user1.id).name);
-    expect.equal(user2.name, UserMap.get(user2.id).name);
+    expect.equal(user1.name, UserMap.getExn(user1.id).name);
+    expect.equal(user2.name, UserMap.getExn(user2.id).name);
   });
 
   test("should handle error transaction", ({expect}) => {
@@ -189,7 +189,7 @@ describe("Map", ({test, testOnly}) => {
       |> UserMap.apply,
     ).
       toBeOk();
-    expect.equal(UserMap.get(miniMe.id).name, "Sixten Eldh");
+    expect.equal(UserMap.getExn(miniMe.id).name, "Sixten Eldh");
 
     // Undo queue
     let previousUndoLength =
@@ -218,11 +218,11 @@ describe("Map", ({test, testOnly}) => {
     );
 
     // But values should update
-    expect.equal(UserMap.get(miniMe.id).name, "Sxtn");
+    expect.equal(UserMap.getExn(miniMe.id).name, "Sxtn");
 
     // Redo still works, acts as a new update
     expect.result(Credt.Manager.redo()).toBeOk();
-    expect.equal(UserMap.get(miniMe.id).name, "Sixten Eldh");
-    expect.equal(UserMap.get(miniMe.id).age, 2);
+    expect.equal(UserMap.getExn(miniMe.id).name, "Sixten Eldh");
+    expect.equal(UserMap.getExn(miniMe.id).age, 2);
   });
 });
